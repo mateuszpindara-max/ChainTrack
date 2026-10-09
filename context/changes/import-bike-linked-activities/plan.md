@@ -259,12 +259,12 @@ This adds new tables; no existing application data needs conversion. Enable RLS 
 
 #### Automated
 
-- [x] 1.1 `git check-ignore .dev.vars` confirms the local secrets file is ignored.
+- [x] 1.1 `git check-ignore .dev.vars` confirms the local secrets file is ignored. — 9718e02
 
 #### Manual
 
-- [x] 1.2 [CZŁOWIEK] The Strava developer app exists, the target account is available for authorization, and the Client ID and Client Secret are stored privately.
-- [x] 1.3 [CZŁOWIEK] `.dev.vars` contains the local callback and the required Strava/encryption values without exposing them in Git or chat.
+- [x] 1.2 [CZŁOWIEK] The Strava developer app exists, the target account is available for authorization, and the Client ID and Client Secret are stored privately. — 9718e02
+- [x] 1.3 [CZŁOWIEK] `.dev.vars` contains the local callback and the required Strava/encryption values without exposing them in Git or chat. — 9718e02
 
 ### Phase 2: Owned data model and secure Strava connection
 

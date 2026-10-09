@@ -1,6 +1,20 @@
 # Lokalny start ChainTrack po restarcie
 
-Ten runbook uruchamia lokalny Supabase, buduje aplikację Astro z sekretami z `.dev.vars`, startuje preview Cloudflare i wykonuje smoke test auth.
+Ten runbook opisuje dwa tryby pracy: szybki serwer Astro na `localhost` oraz pełny test aplikacji na preview Cloudflare z lokalnym Supabase.
+
+## Szybki start na localhost
+
+Aby uruchomić aplikację do pracy nad stroną, z katalogu projektu wykonaj:
+
+```bash
+npm run dev
+```
+
+Astro udostępni aplikację pod `http://localhost:4321`. Ten tryb wystarcza do sprawdzenia strony i nie wymaga uruchomionego Supabase. Zatrzymasz go poleceniem `npx astro dev stop`.
+
+Supabase jest potrzebny do działania i testowania logowania, rejestracji oraz sesji użytkownika. Bez skonfigurowanego Supabase strony publiczne nadal się renderują, ale `/dashboard` przekieruje anonimowego użytkownika do logowania, a operacje auth nie będą działać. Pełny test auth wykonuj w trybie preview opisanym niżej; samo `npm run dev` nie zastępuje tej procedury.
+
+Jeśli port `4321` jest zajęty, sprawdź najpierw istniejący serwer poleceniem `npx astro dev status`. Możesz użyć innego portu, np. `npm run dev -- --port 4322`.
 
 ## Warunki wstępne
 
@@ -25,11 +39,13 @@ W Terminalu 1, z katalogu projektu:
 cd /Users/mateuszpindara/Projects/ChainTrack
 node --version
 npm install
-npx supabase start
 npx supabase status
+curl -fsS -o /dev/null http://127.0.0.1:54321/auth/v1/health
 ```
 
-`npx supabase status` musi pokazać działający lokalny API pod `http://127.0.0.1:54321`. Jeżeli Supabase nie startuje, sprawdź Docker Desktop i nie przechodź do buildu.
+Najpierw sprawdź, czy lokalny API odpowiada pod `http://127.0.0.1:54321` (health check powinien zakończyć się kodem `200`). Jeśli odpowiada, Supabase już działa i nie uruchamiaj ponownie `npx supabase start`. Jeśli nie odpowiada, uruchom `npx supabase start`, a następnie ponów `npx supabase status` i health check. `supabase status` może wypisać lokalne klucze; nie kopiuj jego pełnego wyniku do zgłoszeń ani odpowiedzi. Jeśli Supabase nie startuje, sprawdź Docker Desktop i nie przechodź do buildu.
+
+Te kroki Supabase są wymagane dla pełnego smoke testu auth poniżej, ale nie dla szybkiego uruchomienia strony przez `npm run dev`.
 
 W Terminalu 1 albo w nowym terminalu wykonaj kontrole jakości:
 

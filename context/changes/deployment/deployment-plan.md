@@ -1,7 +1,7 @@
 # ChainTrack: wdrożenie dla początkujących
 
 Status: instrukcja do wykonania
-Ostatnia aktualizacja: 2026-09-25
+Ostatnia aktualizacja: 2026-09-28
 
 ## Jak czytać ten dokument
 
@@ -15,7 +15,7 @@ Nie wklejaj haseł, tokenów ani kluczy do rozmowy z agentem. Sekret wpisz bezpo
 
 ## Cel i decyzja techniczna
 
-ChainTrack będzie uruchomiony jako aplikacja SSR na **Cloudflare Workers**. Astro generuje serwerowy Worker, a Supabase obsługuje logowanie i bazę danych. Cloudflare Pages jest w tym planie tylko historyczną nazwą i nie jest docelową platformą.
+ChainTrack będzie uruchomiony jako aplikacja SSR na **Cloudflare Workers**. Astro generuje serwerowy Worker, a Supabase obsługuje logowanie i bazę danych. Pierwszym hostem będzie adres `workers.dev`; własna domena jest opcjonalna i nie blokuje MVP. Cloudflare przeznacza `workers.dev` głównie dla projektów hobbystycznych i niekrytycznych biznesowo, dlatego przed uznaniem aplikacji za krytyczną usługę należy ponownie ocenić własną domenę lub route. Cloudflare Pages jest w tym planie tylko historyczną nazwą i nie jest docelową platformą.
 
 Na początku wdrażamy tylko istniejący przepływ logowania. Integracja z dostawcą aktywności jest późniejszym etapem i nie może blokować pierwszego wdrożenia.
 
@@ -36,7 +36,7 @@ docker --version
 
 4. **[CZŁOWIEK] Przygotuj repozytorium i dostęp.** Upewnij się, że repozytorium jest na GitHubie, że masz uprawnienia administratora do repozytorium i ochrony gałęzi, oraz że osoba wdrażająca ma dostęp do Cloudflare i projektu Supabase. Włącz 2FA w GitHubie, Cloudflare i Supabase.
 
-5. **[CZŁOWIEK] Ustal nazwy i właścicieli.** Zdecyduj oraz zapisz w tym dokumencie: domenę produkcyjną, osobę zatwierdzającą produkcję, osobę z dostępem do Cloudflare, osobę z dostępem do Supabase i osobę odpowiedzialną za rollback. W wersji MVP nie ma osobnego stagingu.
+5. **[CZŁOWIEK] Ustal nazwy i właścicieli.** Zapisz osobę zatwierdzającą produkcję, osobę z dostępem do Cloudflare, osobę z dostępem do Supabase i osobę odpowiedzialną za rollback. W MVP adresem aplikacji jest `workers.dev`; własną domenę można wybrać później. Nie ma osobnego stagingu.
 
 ## Etap 1: decyzje przed konfiguracją
 
@@ -68,11 +68,11 @@ Nie dodawaj `.env`, `.dev.vars` ani tokenów do Git. Sprawdź `git status`, aby 
 
 ## Etap 3: przygotowanie do konfiguracji dostawców
 
-Etap 3 kończy konfigurację lokalną i decyzje projektowe. Produkcyjny projekt Supabase, domena, sekrety i integracja GitHub są wykonywane dopiero w etapach 5–7, w kolejności zależności opisanej poniżej. W obecnym MVP nie ma osobnego stagingu.
+Etap 3 kończy konfigurację lokalną i decyzje projektowe. Produkcyjny projekt Supabase, sekrety i integracja GitHub są wykonywane w etapach 5–7. Własna domena nie jest wymagana; w MVP używamy adresu `workers.dev`. Nie ma osobnego stagingu.
 
 ## Etap 4: lokalny Wrangler i walidacja aplikacji
 
-- [ ] **[CZŁOWIEK] Sprawdź lokalne narzędzia.** Upewnij się, że używany jest Node `22.14.0`, zależności są zainstalowane, a Wrangler jest dostępny jako zależność projektu. `npx wrangler login` wykonaj dopiero przed operacjami na koncie Cloudflare; autoryzacji nie przekazuj agentowi.
+- [ ] **[AGENT AI] Sprawdź lokalne narzędzia.** Sprawdź `node --version`, `npm --version` i `npx wrangler --version`; Wrangler jest już zainstalowany jako zależność projektu. Jeśli brakuje zależności lub Node nie ma wersji `22.14.0`, zgłoś dokładny problem i poproś człowieka tylko o brakujące działanie. Logowanie do Cloudflare wykonuj dopiero w etapie 5.
 
 - [x] **[AGENT AI] Wykonaj lokalną kontrolę jakości.** `npm run lint`, `npx astro check`, `npm run wrangler:types` i `npm run build` przeszły. Preview uruchomił się na `http://localhost:4321`; smoke test został uruchomiony, ale wymaga działającego lokalnego Supabase.
 
@@ -85,15 +85,21 @@ BASE_URL=http://localhost:4321 npm run smoke
 
 ## Etap 5: Cloudflare i docelowy adres aplikacji
 
-- [ ] **[CZŁOWIEK] Przygotuj konto Cloudflare.** Zaloguj się do Cloudflare, potwierdź właściwy Account ID i upewnij się, że nazwa Workera to `chaintrack-production`. Nie twórz jeszcze sekretów.
+- [ ] **[AGENT AI] Zrób lokalny preflight Cloudflare.** Sprawdź `npx wrangler --version`, konfigurację `wrangler.jsonc` i zgodność jej nazwy `chaintrack-production`, entrypointu Astro, `nodejs_compat`, assets, obsługi 404 oraz observability. Uruchom `npx wrangler whoami`, aby sprawdzić, czy Wrangler jest zalogowany i do którego konta ma dostęp. Nie wyświetlaj ani nie zapisuj tokenów.
 
-- [ ] **[CZŁOWIEK] Wybierz domenę produkcyjną.** Dodaj domenę do strefy DNS Cloudflare i zdecyduj o dokładnym adresie aplikacji, np. `app.example.com`. Ten adres jest potrzebny przed konfiguracją redirectów Supabase.
+- [ ] **[CZŁOWIEK] Zaloguj Wranglera tylko jeśli trzeba.** Jeśli `npx wrangler whoami` pokaże brak autoryzacji lub niewłaściwe konto, agent zatrzymuje operacje na koncie i prosi o wykonanie `npx wrangler login` w lokalnym terminalu oraz wybranie właściwego konta. Nie prosi o token, hasło ani skopiowanie danych uwierzytelniających do rozmowy. Po zalogowaniu agent ponownie uruchamia `npx wrangler whoami` i raportuje nazwę/Account ID sprawdzonego konta.
 
-- [ ] **[CZŁOWIEK] Skonfiguruj Custom Domain lub route.** Przygotuj powiązanie domeny z Workerem i sprawdź certyfikat TLS. Jeżeli panel wymaga wcześniejszej publikacji Workera, zapisz konfigurację jako oczekującą i dokończ ją po pierwszym deployu.
+- [ ] **[AGENT AI] Sprawdź dostępność `workers.dev`.** Potwierdź, że konto ma skonfigurowaną i włączoną subdomenę `workers.dev`. Sprawdź w Cloudflare Dashboard → **Workers & Pages** nazwę subdomeny konta oraz czy trasa `workers.dev` jest aktywna. `wrangler whoami` potwierdza konto, ale nie musi zwracać jego subdomeny; jeśli agent nie może jej odczytać, poproś człowieka tylko o podanie widocznej nazwy subdomeny lub potwierdzenie ustawienia w panelu. Jeśli subdomena nie jest skonfigurowana, poproś człowieka o jej jednorazowe włączenie. Nie wymagaj własnej domeny ani strefy DNS.
 
-- [ ] **[AGENT AI] Sprawdź konfigurację Workera.** Zweryfikuj `wrangler.jsonc`, entrypoint Astro, `nodejs_compat`, katalog `./dist`, obsługę 404 i observability. Nie dodawaj sekretów do plików repozytorium.
+- [ ] **[AGENT AI] Potwierdź adres Workera.** Adres ma format `https://chaintrack-production.<subdomena-konta>.workers.dev`. Użyj nazwy Workera z `wrangler.jsonc` i subdomeny potwierdzonej w panelu. Zapisz ten URL jako adres MVP; jeśli Cloudflare pokazuje inny URL po utworzeniu Workera, użyj adresu zwróconego przez Cloudflare.
 
-- [ ] **[WSPÓLNIE] Potwierdź gotowość adresu.** Zapisz wybrany publiczny URL, który będzie używany identycznie w Cloudflare, Supabase i późniejszym teście produkcyjnym.
+- [ ] **[AGENT AI] Utrzymaj konfigurację bez własnej domeny.** Pozostaw `workers_dev: true` w `wrangler.jsonc` i nie dodawaj `route`, `routes` ani `custom_domain` dla MVP. Dzięki temu publikacja nie wymaga własnej strefy DNS ani ręcznego tworzenia certyfikatu. Pokaż diff, jeśli konfiguracja wymaga poprawy, ale nie uruchamiaj deployu.
+
+- [ ] **[AGENT AI] Zweryfikuj konfigurację `workers.dev`.** Uruchom `npm run wrangler:types`, `npm run build` i `npx wrangler deploy --dry-run`. Potwierdź, że `workers_dev` jest włączone i konfiguracja nie wymaga własnej domeny. Raportuj wynik; dry-run nie publikuje Workera.
+
+- [ ] **[CZŁOWIEK] Zatwierdź adres i moment publikacji.** Potwierdź adres `workers.dev` oraz diff konfiguracji. Osobna zgoda jest wymagana przed scaleniem lub wypchnięciem zmiany, która uruchomi pierwszy produkcyjny build Workers Builds. Samo przygotowanie konfiguracji nie oznacza zgody na publikację.
+
+- [ ] **[WSPÓLNIE] Przekaż URL do etapu Supabase.** Użyj dokładnego adresu `workers.dev` jako źródła prawdy dla Site URL, redirectów Auth i testu produkcyjnego. Brak własnej domeny nie blokuje kolejnego etapu.
 
 ## Etap 6: Supabase i sekrety aplikacji
 
@@ -101,7 +107,7 @@ BASE_URL=http://localhost:4321 npm run smoke
 
 - [ ] **[CZŁOWIEK] Pobierz wartości aplikacyjne.** Z **Project Settings → API** pobierz wyłącznie Project URL oraz klucz `anon`/publishable. Nie używaj `service_role`. Wartości przechowuj w menedżerze haseł.
 
-- [ ] **[CZŁOWIEK] Skonfiguruj Auth.** W **Authentication → URL Configuration** ustaw Site URL na finalny adres Cloudflare i dodaj dokładne redirect URLs dla produkcji oraz localhosta. Pozostaw potwierdzenie e-mail włączone; SMTP produkcyjny skonfiguruj przed realnym użyciem.
+- [ ] **[CZŁOWIEK] Skonfiguruj Auth.** W **Authentication → URL Configuration** ustaw Site URL na adres `workers.dev` z etapu 5 i dodaj dokładne redirect URLs dla `workers.dev` oraz localhosta. Pozostaw potwierdzenie e-mail włączone; SMTP skonfiguruj przed realnym użyciem. Po późniejszej zmianie hosta zaktualizuj Site URL i redirect URLs.
 
 - [ ] **[AGENT AI] Zweryfikuj kod auth.** Sprawdź `src/lib/supabase.ts`, `src/middleware.ts` i `src/pages/api/auth/` pod kątem walidacji, cookies, redirectów i ochrony `/dashboard`. Agent nie odczytuje wartości sekretów.
 
@@ -113,17 +119,17 @@ BASE_URL=http://localhost:4321 npm run smoke
 
 - [ ] **[CZŁOWIEK] Wybierz system publikacji.** Pozostaje jeden system: **Cloudflare Workers Builds**. Nie dodawaj równolegle GitHub Actions ani ręcznego deployu jako stałej ścieżki.
 
-- [ ] **[CZŁOWIEK] Połącz Cloudflare Workers Builds z GitHubem.** Wybierz repozytorium, gałąź produkcyjną, komendę buildu `npm run build` i konfigurację Workera. Nadaj integracji minimalne uprawnienia. Token Cloudflare twórz tylko wtedy, gdy wybrany wariant integracji go wymaga, i przechowuj go poza repozytorium.
+- [ ] **[CZŁOWIEK] Połącz Cloudflare Workers Builds z GitHubem.** Wybierz repozytorium, gałąź produkcyjną, komendę buildu `npm run build` i konfigurację Workera. Nadaj integracji minimalne uprawnienia. Nie uruchamiaj ani nie zatwierdzaj pierwszego produkcyjnego builda przed zgodą właściciela z etapu 5; jeśli samo połączenie integracji natychmiast publikuje, odłóż je do etapu 8. Token Cloudflare twórz tylko wtedy, gdy wybrany wariant integracji go wymaga, i przechowuj go poza repozytorium.
 
 - [ ] **[AGENT AI] Przygotuj i sprawdź commit wdrożeniowy.** Zweryfikuj diff, uruchom `npm install`, `npm run lint`, `npx astro check`, `npm run wrangler:types`, `npm run build` i lokalny smoke test. Agent nie zatwierdza publikacji produkcyjnej.
 
 ## Etap 8: pierwszy deploy, test produkcyjny i rollback
 
-- [ ] **[CZŁOWIEK] Potwierdź gotowość do publikacji.** Sprawdź, że projekt Supabase, finalny URL, sekrety Workera i połączenie Workers Builds są ustawione. Właściciel projektu, Mateusz Pindara, zatwierdza pierwszy deploy.
+- [ ] **[CZŁOWIEK] Potwierdź gotowość do publikacji.** Sprawdź, że projekt Supabase, adres `workers.dev`, sekrety Workera i połączenie Workers Builds są ustawione. Właściciel projektu, Mateusz Pindara, zatwierdza pierwszy deploy.
 
 - [ ] **[WSPÓLNIE] Wdróż pierwszą wersję.** Cloudflare Workers Builds wykonuje build i publikację z ustalonej gałęzi. Nie uruchamiaj równolegle `npx wrangler deploy`; ręczny Wrangler zostaje procedurą awaryjną po osobnej akceptacji.
 
-- [ ] **[CZŁOWIEK] Dokończ domenę i TLS.** Jeżeli konfiguracja domeny oczekiwała na istniejącego Workera, dokończ Custom Domain/route, DNS i certyfikat TLS. Sprawdź dostępność po HTTPS.
+- [ ] **[WSPÓLNIE] Potwierdź adres `workers.dev` po buildzie.** Sprawdź, czy Workers Builds opublikował `chaintrack-production` pod adresem `workers.dev`, a następnie zweryfikuj odpowiedź strony po HTTPS. Nie konfiguruj własnego DNS ani certyfikatu TLS dla tego adresu.
 
 - [ ] **[WSPÓLNIE] Wykonaj test po publikacji.** Agent uruchamia smoke test na publicznym URL. Człowiek testuje rejestrację, e-mail, logowanie, złe hasło, ochronę dashboardu, odświeżenie sesji, cookies, 404 i wylogowanie.
 
@@ -157,13 +163,13 @@ BASE_URL=http://localhost:4321 npm run smoke
 ### Produkcja
 
 - [ ] **[CZŁOWIEK]** Istnieje osobny projekt Supabase i sekrety środowiska produkcyjnego.
-- [ ] **[WSPÓLNIE]** Działa domena HTTPS, auth, cookies, e-mail, 404 i ochrona dashboardu.
+- [ ] **[WSPÓLNIE]** Działa adres HTTPS `workers.dev`, auth, cookies, e-mail, 404 i ochrona dashboardu.
 - [ ] **[AGENT AI]** Local smoke test i deploy produkcyjny przechodzą bez błędów.
 
 ### Po wdrożeniu
 
 - [ ] **[CZŁOWIEK]** Jest zgoda właściciela po udanych testach lokalnych i walidacji produkcyjnej.
-- [ ] **[WSPÓLNIE]** Działa domena, DNS, TLS, redirecty Supabase i pełny test konta.
+- [ ] **[WSPÓLNIE]** Działa adres `workers.dev`, TLS, redirecty Supabase i pełny test konta.
 - [ ] **[CZŁOWIEK]** Znana jest poprzednia dobra wersja i osoba od rollbacku.
 
 ## Co może zrobić agent, a czego nie powinien
@@ -174,7 +180,7 @@ Agent AI nie powinien: zakładać kont za człowieka, akceptować regulaminów, 
 
 ## Ustalenia do uzupełnienia przez człowieka
 
-- [x] Domena produkcyjna: do ustalenia po wyborze domeny
+- [x] Host MVP: `workers.dev` (własna domena opcjonalna, poza zakresem pierwszego wdrożenia)
 - [x] Domena stagingowa: brak w MVP (bez osobnego stagingu)
 - [x] Nazwa Workera staging: brak (MVP bez stagingu)
 - [x] Nazwa Workera production: `chaintrack-production`
