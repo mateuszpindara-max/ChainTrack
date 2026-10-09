@@ -17,6 +17,9 @@ export const GET: APIRoute = async (context) => {
     return new Response("Strava connection is not configured", { status: 503 });
   }
 
+  const { error: cleanupError } = await supabase.from("strava_oauth_states").delete().eq("user_id", user.id);
+  if (cleanupError) return new Response("Could not start Strava authorization", { status: 503 });
+
   const state = createOAuthState();
   const { error } = await supabase.from("strava_oauth_states").insert({
     state_hash: await hashOAuthState(state),

@@ -2,15 +2,51 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   consumeOAuthState,
+  consumeOAuthStateFromDatabase,
   createOAuthState,
   decodeTokenEncryptionKey,
   decryptToken,
   encryptToken,
   hasRequiredStravaScopes,
+  hashOAuthState,
+  type OAuthStateDatabase,
+  type OAuthStateQuery,
   requireStravaConfiguration,
 } from "./security.ts";
 
 const keyHex = "0123456789abcdef".repeat(4);
+
+function createStateQueryMock(rowCount: number, calls: string[][]): OAuthStateDatabase {
+  const queryResult = {
+    data: Array.from({ length: rowCount }, (_, index) => ({ state_hash: `hash-${index}` })),
+    error: null,
+  };
+  const query: OAuthStateQuery = {
+    eq(column, value) {
+      calls.push(["eq", column, value]);
+      return query;
+    },
+    gt(column, value) {
+      calls.push(["gt", column, value]);
+      return query;
+    },
+    select(column) {
+      calls.push(["select", column]);
+      return Promise.resolve(queryResult);
+    },
+  };
+  return {
+    from(table: string) {
+      calls.push(["from", table]);
+      return {
+        delete(options: { count: "exact" }) {
+          calls.push(["delete", options.count]);
+          return query;
+        },
+      };
+    },
+  };
+}
 
 void test("AES-GCM token encryption round-trips and uses a fresh IV", async () => {
   const key = decodeTokenEncryptionKey(keyHex);
@@ -72,4 +108,32 @@ void test("OAuth state is one-use and bound to the initiating user and expiry", 
   assert.equal(await consumeOAuthState(state, "user-a", now, consume), true);
   assert.equal(await consumeOAuthState(state, "user-a", now, consume), false);
   assert.equal(await consumeOAuthState("malformed", "user-a", now, consume), false);
+});
+
+void test("OAuth callback consumes only one matching unexpired database state", async () => {
+  const state = createOAuthState();
+  const stateHash = await hashOAuthState(state);
+  const now = new Date("2026-10-09T12:00:00.000Z");
+
+  for (const [rowCount, expected] of [
+    [0, false],
+    [1, true],
+    [2, false],
+  ] as const) {
+    const calls: string[][] = [];
+    const supabase = createStateQueryMock(rowCount, calls);
+    const accepted = await consumeOAuthState(state, "user-a", now, (hash, userId, consumedAt) =>
+      consumeOAuthStateFromDatabase(supabase, hash, userId, consumedAt),
+    );
+
+    assert.equal(accepted, expected);
+    assert.deepEqual(calls, [
+      ["from", "strava_oauth_states"],
+      ["delete", "exact"],
+      ["eq", "state_hash", stateHash],
+      ["eq", "user_id", "user-a"],
+      ["gt", "expires_at", now.toISOString()],
+      ["select", "state_hash"],
+    ]);
+  }
 });

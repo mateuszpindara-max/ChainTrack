@@ -1,5 +1,22 @@
 export const REQUIRED_STRAVA_SCOPES = ["activity:read_all", "profile:read_all"] as const;
 
+export interface OAuthStateQueryResult {
+  data: { state_hash: string }[] | null;
+  error: unknown;
+}
+
+export interface OAuthStateQuery {
+  eq(column: string, value: string): OAuthStateQuery;
+  gt(column: string, value: string): OAuthStateQuery;
+  select(column: string): PromiseLike<OAuthStateQueryResult>;
+}
+
+export interface OAuthStateDatabase {
+  from(table: "strava_oauth_states"): {
+    delete(options: { count: "exact" }): OAuthStateQuery;
+  };
+}
+
 export interface StravaEnvironment {
   STRAVA_CLIENT_ID?: string;
   STRAVA_CLIENT_SECRET?: string;
@@ -89,6 +106,23 @@ export function createOAuthState(): string {
 export async function hashOAuthState(state: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(state));
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export async function consumeOAuthStateFromDatabase(
+  supabase: OAuthStateDatabase,
+  stateHash: string,
+  userId: string,
+  now: Date,
+): Promise<number> {
+  const { data, error } = await supabase
+    .from("strava_oauth_states")
+    .delete({ count: "exact" })
+    .eq("state_hash", stateHash)
+    .eq("user_id", userId)
+    .gt("expires_at", now.toISOString())
+    .select("state_hash");
+  if (error || !data) return 0;
+  return data.length;
 }
 
 export async function consumeOAuthState(

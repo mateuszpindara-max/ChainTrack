@@ -37,9 +37,27 @@ export async function getStravaAccessToken(supabase: SupabaseClient, userId: str
       .from("strava_connections")
       .update(update)
       .eq("user_id", userId)
+      .eq("refresh_token_ciphertext", connection.refresh_token_ciphertext)
       .select("user_id")
       .maybeSingle();
-    if (updateError || !data) throw new Error("Could not persist the refreshed Strava token");
+    if (updateError) throw new Error("Could not persist the refreshed Strava token");
+    if (data) return;
+
+    const { data: winner, error: readError } = await supabase
+      .from("strava_connections")
+      .select("access_token_ciphertext, token_expires_at")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (
+      readError ||
+      !winner ||
+      typeof winner.access_token_ciphertext !== "string" ||
+      typeof winner.token_expires_at !== "string" ||
+      Date.parse(winner.token_expires_at) <= Date.now() + 60_000
+    ) {
+      throw new Error("Could not use the concurrently refreshed Strava token");
+    }
+    return decryptToken(winner.access_token_ciphertext, configuration.encryptionKey);
   });
 }
 

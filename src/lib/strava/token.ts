@@ -36,7 +36,7 @@ function isTokenResponse(value: unknown): value is TokenResponse {
 export async function refreshStravaAccessToken(
   connection: StravaTokenConnection,
   configuration: StravaConfiguration,
-  persist: (update: StravaTokenUpdate) => Promise<void>,
+  persist: (update: StravaTokenUpdate) => Promise<string | undefined>,
   fetcher: typeof fetch = fetch,
   now: Date = new Date(),
 ): Promise<string> {
@@ -58,11 +58,11 @@ export async function refreshStravaAccessToken(
     throw new Error("Strava returned an invalid token refresh response");
   }
 
-  await persist({
+  const persistedAccessToken = await persist({
     access_token_ciphertext: await encryptToken(result.access_token, configuration.encryptionKey),
     refresh_token_ciphertext: await encryptToken(result.refresh_token, configuration.encryptionKey),
     token_expires_at: new Date(result.expires_at * 1000).toISOString(),
     updated_at: now.toISOString(),
   });
-  return result.access_token;
+  return persistedAccessToken ?? result.access_token;
 }

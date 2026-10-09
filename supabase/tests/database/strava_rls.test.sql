@@ -1,6 +1,6 @@
 begin;
 
-select plan(22);
+select plan(24);
 
 insert into auth.users (id, aud, role, email, encrypted_password, email_confirmed_at)
 values
@@ -38,6 +38,8 @@ select is((select count(*)::integer from public.strava_oauth_states), 1, 'user r
 select is((select count(*)::integer from public.strava_connections), 1, 'user reads only their own Strava connection');
 select lives_ok($$insert into public.bikes (user_id, strava_gear_id, name) values (auth.uid(), 'gear-own-write', 'Owned bike')$$, 'user can insert their own bike');
 select lives_ok($$insert into public.activities (user_id, bike_id, strava_activity_id, name, distance_meters, started_at) values (auth.uid(), '10000000-0000-0000-0000-000000000011', 505, 'Owned ride', 500, now())$$, 'user can insert their own activity');
+select throws_ok($$insert into public.strava_oauth_states (state_hash, user_id, expires_at) values (repeat('e', 64), auth.uid(), now() + interval '5 minutes')$$, '23505', null, 'user can have only one pending OAuth state');
+delete from public.strava_oauth_states where user_id = auth.uid();
 select lives_ok($$insert into public.strava_oauth_states (state_hash, user_id, expires_at) values (repeat('d', 64), auth.uid(), now() + interval '5 minutes')$$, 'user can insert their own OAuth state');
 select lives_ok($$update public.strava_connections set athlete_id = 12 where user_id = auth.uid()$$, 'user can update their own connection');
 
@@ -67,7 +69,8 @@ select throws_ok($$insert into public.activities (user_id, bike_id, strava_activ
 select throws_ok($$insert into public.strava_oauth_states (state_hash, user_id, expires_at) values (repeat('c', 64), '20000000-0000-0000-0000-000000000002', now() + interval '5 minutes')$$, '42501', null, 'user cannot insert OAuth state for another user');
 select throws_ok($$insert into public.strava_connections (user_id, access_token_ciphertext, refresh_token_ciphertext, token_expires_at, athlete_id, scopes) values ('20000000-0000-0000-0000-000000000002', 'v1.AAAAAAAAAAAAAAAA.AAAAAAAAAAAAAAAAAAAAAAAA', 'v1.AAAAAAAAAAAAAAAA.AAAAAAAAAAAAAAAAAAAAAAAA', now(), 33, array[]::text[])$$, '42501', null, 'user cannot insert connection for another user');
 select throws_ok($$insert into public.activities (user_id, bike_id, strava_activity_id, name, distance_meters, started_at) values (auth.uid(), '20000000-0000-0000-0000-000000000022', 404, 'Wrong bike owner', 1, now())$$, '23503', null, 'activity cannot reference another user bike');
-select ok((select access_token_ciphertext ~ '^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]+$' and refresh_token_ciphertext ~ '^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]+$' from public.strava_connections where user_id = auth.uid()), 'stored token values use the ciphertext representation');
+select throws_ok($$update public.strava_connections set access_token_ciphertext = 'plaintext-access-token', refresh_token_ciphertext = 'plaintext-refresh-token' where user_id = auth.uid()$$, '23514', null, 'database rejects plaintext token values');
+select ok((select access_token_ciphertext ~ '^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]+$' and refresh_token_ciphertext ~ '^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]+$' from public.strava_connections where user_id = auth.uid()), 'stored token values use the ciphertext envelope format');
 
 select * from finish();
 rollback;

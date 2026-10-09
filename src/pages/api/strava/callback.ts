@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { createClient } from "@/lib/supabase";
-import { consumeOAuthState, hasRequiredStravaScopes } from "@/lib/strava/security.ts";
+import { consumeOAuthState, consumeOAuthStateFromDatabase, hasRequiredStravaScopes } from "@/lib/strava/security.ts";
 import { getStravaConfiguration, saveStravaConnection } from "@/lib/strava/server";
 
 export const prerender = false;
@@ -25,17 +25,9 @@ export const GET: APIRoute = async (context) => {
   }
 
   const state = context.url.searchParams.get("state") ?? "";
-  const validState = await consumeOAuthState(state, user.id, new Date(), async (stateHash, userId, now) => {
-    const { data, error } = await supabase
-      .from("strava_oauth_states")
-      .delete({ count: "exact" })
-      .eq("state_hash", stateHash)
-      .eq("user_id", userId)
-      .gt("expires_at", now.toISOString())
-      .select("state_hash");
-    if (error) return 0;
-    return data.length;
-  });
+  const validState = await consumeOAuthState(state, user.id, new Date(), (stateHash, userId, now) =>
+    consumeOAuthStateFromDatabase(supabase, stateHash, userId, now),
+  );
   if (!validState) return new Response("Invalid or expired Strava authorization state", { status: 400 });
 
   const providerError = context.url.searchParams.get("error");
