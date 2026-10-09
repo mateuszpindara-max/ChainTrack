@@ -270,14 +270,14 @@ This adds new tables; no existing application data needs conversion. Enable RLS 
 
 #### Automated
 
-- [ ] 2.1 `npx supabase db reset` applies the new migration locally without failing on the missing seed file.
-- [ ] 2.2 Automated database checks prove users can access only their own bikes, activities, and encrypted connection rows; token columns contain ciphertext rather than plaintext.
-- [ ] 2.3 OAuth tests cover invalid state, denied/missing scopes, missing server configuration, and persisting the newest refresh token after rotation.
-- [ ] 2.4 A static configuration check confirms `SUPABASE_SERVICE_ROLE_KEY` is absent and all Strava variables are server-only.
+- [x] 2.1 `npx supabase db reset` applies the new migration locally without failing on the missing seed file.
+- [x] 2.2 Automated database checks prove users can access only their own bikes, activities, and encrypted connection rows; token columns contain ciphertext rather than plaintext.
+- [x] 2.3 OAuth tests cover invalid state, denied/missing scopes, missing server configuration, and persisting the newest refresh token after rotation.
+- [x] 2.4 A static configuration check confirms `SUPABASE_SERVICE_ROLE_KEY` is absent and all Strava variables are server-only.
 
 #### Manual
 
-- [ ] 2.5 [CZŁOWIEK] Local secrets remain in ignored `.dev.vars`; none are requested in chat or printed in test/build output.
+- [x] 2.5 [CZŁOWIEK] Local secrets remain in ignored `.dev.vars`; none are requested in chat or printed in test/build output.
 
 ### Phase 3: Initial history import and activity list
 

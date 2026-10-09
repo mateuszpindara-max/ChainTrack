@@ -10,6 +10,7 @@
     "check": "astro check",
     "wrangler:types": "wrangler types",
     "validate:config": "npm run check && npm run wrangler:types",
+    "test": "node --experimental-strip-types --test src/lib/strava/*.test.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

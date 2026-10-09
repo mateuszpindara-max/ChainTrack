@@ -18,6 +18,14 @@ export default defineConfig({
     schema: {
       SUPABASE_URL: envField.string({ context: "server", access: "secret", optional: true }),
       SUPABASE_KEY: envField.string({ context: "server", access: "secret", optional: true }),
+      STRAVA_CLIENT_ID: envField.string({ context: "server", access: "secret", optional: true }),
+      STRAVA_CLIENT_SECRET: envField.string({ context: "server", access: "secret", optional: true }),
+      STRAVA_REDIRECT_URI: envField.string({ context: "server", access: "secret", optional: true }),
+      STRAVA_TOKEN_ENCRYPTION_KEY: envField.string({
+        context: "server",
+        access: "secret",
+        optional: true,
+      }),
     },
   },
 });

@@ -35,11 +35,7 @@ npm install
 
 3. Set up Supabase and configure environment variables — see [Supabase Configuration](#supabase-configuration) below.
 
-4. Create a `.dev.vars` file for local Cloudflare dev secrets:
-
-```bash
-cp .env.example .dev.vars
-```
+4. Create an ignored `.dev.vars` file and add the local server variables listed below.
 
 5. Run the development server:
 
@@ -79,11 +75,7 @@ This project uses [Supabase](https://supabase.com/) for authentication. Environm
 
 Requires [Docker](https://www.docker.com/) and ~7 GB RAM.
 
-1. Create your `.env` file:
-
-```bash
-cp .env.example .env
-```
+1. Create the ignored `.dev.vars` file for local server variables.
 
 2. Initialize the local Supabase project (creates a `supabase/` config folder):
 
@@ -97,7 +89,7 @@ npx supabase init
 npx supabase start
 ```
 
-4. Copy the credentials printed by the CLI into your `.env` and `.dev.vars`:
+4. Copy the credentials printed by the CLI into `.dev.vars`:
 
 ```
 SUPABASE_URL=http://127.0.0.1:54321
@@ -112,11 +104,11 @@ npx supabase stop
 
 The local Studio UI is available at `http://localhost:54323`.
 
-No database tables or migrations are required — this project uses Supabase Auth's built-in `auth.users` table only.
+The local migration creates the bikes, activities, OAuth-state, and Strava-connection tables. Apply it with `npx supabase db reset`; no seed data is configured.
 
 ### Using a cloud Supabase project instead
 
-If you prefer to use a hosted Supabase project, add these variables to your `.env` and `.dev.vars` files:
+If you prefer to use a hosted Supabase project, add these variables to your ignored `.dev.vars` file:
 
 | Variable       | Description                                                |
 | -------------- | ---------------------------------------------------------- |
@@ -127,6 +119,12 @@ If you prefer to use a hosted Supabase project, add these variables to your `.en
 SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_KEY=<anon-key>
 ```
+
+### Strava connection configuration
+
+Strava OAuth and token encryption use server-only variables declared in `astro.config.mjs`. For local development, add `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_REDIRECT_URI`, and `STRAVA_TOKEN_ENCRYPTION_KEY` to the ignored `.dev.vars` file. Do not put their values in tracked files or browser code. The encryption key must be 32 random bytes encoded as exactly 64 hexadecimal characters; retain it securely because losing it requires reconnecting Strava.
+
+Configure the Strava app's callback domain as `localhost` for local development and use `http://localhost:4321/api/strava/callback` as its redirect URI. For a deployed Worker, configure the matching application host in Strava and set `STRAVA_REDIRECT_URI` to that host's `/api/strava/callback` URL. Add the same four variables as Cloudflare Worker secrets; enter each value directly in the Cloudflare dashboard or through `npx wrangler secret put` without placing it in the repository. The authorization requires `activity:read_all` and `profile:read_all`.
 
 ### Email confirmation in local development
 
