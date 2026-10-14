@@ -295,9 +295,9 @@ This adds new tables; no existing application data needs conversion. Enable RLS 
 
 #### Automated
 
-- [x] 4.1 The new test command, `npm run lint`, `npm run validate:config`, `npm run build`, and `npm run smoke` pass in the configured local environment.
+- [x] 4.1 The new test command, `npm run lint`, `npm run validate:config`, `npm run build`, and `npm run smoke` pass in the configured local environment. — 0f0f627
 
 #### Manual
 
-- [x] 4.2 [CZŁOWIEK] Real Strava authorization succeeds with both required scopes and the dashboard imports the available history, showing the expected bike-linked activities newest-first.
-- [x] 4.3 [WSPÓLNIE] The visible skipped count matches the tested bike-less/unmatched case when present, and no Strava token or secret is exposed to browser output, URLs, Git, or logs.
+- [x] 4.2 [CZŁOWIEK] Real Strava authorization succeeds with both required scopes and the dashboard imports the available history, showing the expected bike-linked activities newest-first. — 0f0f627
+- [x] 4.3 [WSPÓLNIE] The visible skipped count matches the tested bike-less/unmatched case when present, and no Strava token or secret is exposed to browser output, URLs, Git, or logs. — 0f0f627
