@@ -1,27 +1,53 @@
 ---
+import ActivityDashboard from "@/components/ActivityDashboard";
 import Layout from "@/layouts/Layout.astro";
+import { toActivityViews } from "@/lib/strava/activity-view.ts";
+import { createClient } from "@/lib/supabase";
 
 const { user } = Astro.locals;
+let connectionStatus: "connected" | "not-connected" | "unavailable" = "unavailable";
+let initialActivities = [] as ReturnType<typeof toActivityViews>;
+let initialLoadError = false;
+
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+if (supabase && user) {
+  const { data: connection, error: connectionError } = await supabase
+    .from("strava_connections")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (connectionError) {
+    connectionStatus = "unavailable";
+  } else if (!connection) {
+    connectionStatus = "not-connected";
+  } else {
+    connectionStatus = "connected";
+    const [{ data: activities, error: activityError }, { data: bikes, error: bikeError }] = await Promise.all([
+      supabase
+        .from("activities")
+        .select("id, name, distance_meters, started_at, bike_id")
+        .eq("user_id", user.id)
+        .order("started_at", { ascending: false }),
+      supabase.from("bikes").select("id, name").eq("user_id", user.id),
+    ]);
+
+    if (activityError || bikeError) {
+      initialLoadError = true;
+    } else {
+      initialActivities = toActivityViews(activities, bikes);
+    }
+  }
+}
 ---
 
 <Layout title="Dashboard">
-  <div class="bg-cosmic flex min-h-screen items-center justify-center p-4">
-    <div class="rounded-2xl border border-white/10 bg-white/10 p-8 text-center text-white backdrop-blur-xl">
-      <h1 class="mb-4 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-3xl font-bold text-transparent">
-        Dashboard
-      </h1>
-      <p class="text-blue-100/80">
-        Welcome, <span class="font-semibold text-white">{user?.email}</span>
-      </p>
-      <p class="mt-2 text-sm text-blue-100/50">This page is only for authenticated users.</p>
-      <form method="POST" action="/api/auth/signout" class="mt-6">
-        <button
-          type="submit"
-          class="rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm transition-colors hover:bg-white/20"
-        >
-          Sign out
-        </button>
-      </form>
-    </div>
+  <div class="bg-cosmic min-h-screen">
+    <ActivityDashboard
+      client:load
+      connectionStatus={connectionStatus}
+      initialActivities={initialActivities}
+      initialLoadError={initialLoadError}
+    />
   </div>
 </Layout>

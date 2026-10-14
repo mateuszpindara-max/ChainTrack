@@ -283,13 +283,13 @@ This adds new tables; no existing application data needs conversion. Enable RLS 
 
 #### Automated
 
-- [ ] 3.1 Mocked import tests fetch every page, match bikes by source ID, and exclude activities with missing or unmatched bike IDs while reporting their count.
-- [ ] 3.2 A repeated import and a retry after a later-page failure preserve saved rows without duplicate `(user_id, strava_activity_id)` records and return an explicit partial result.
-- [ ] 3.3 Dashboard/API tests verify the required activity fields, kilometer display, local date, and newest-first ordering.
+- [x] 3.1 Mocked import tests fetch every page, match bikes by source ID, and exclude activities with missing or unmatched bike IDs while reporting their count.
+- [x] 3.2 A repeated import and a retry after a later-page failure preserve saved rows without duplicate `(user_id, strava_activity_id)` records and return an explicit partial result.
+- [x] 3.3 Dashboard/API tests verify the required activity fields, kilometer display, local date, and newest-first ordering.
 
 #### Manual
 
-- [ ] 3.4 [AGENT AI] The dashboard has a separate initial-import action and clear connected, loading, empty, success, partial, failure, and skipped-activity states; routine refresh and S-02 controls are absent.
+- [x] 3.4 [AGENT AI] The dashboard has a separate initial-import action and clear connected, loading, empty, success, partial, failure, and skipped-activity states; routine refresh and S-02 controls are absent.
 
 ### Phase 4: End-to-end verification and user acceptance
 
