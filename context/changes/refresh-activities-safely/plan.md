@@ -267,14 +267,14 @@ Additive migration only. Existing rows keep their source identity and provider v
 
 #### Automated
 
-- [ ] 2.1 Fixture tests discover an old-dated new ID, insert it once, and leave existing rows unchanged.
-- [ ] 2.2 Bounded continuation reaches an empty page, resumes safely after failure, and reports skipped activities.
-- [ ] 2.3 Tests prove bike-less/unknown-bicycle activities are counted and not written; a later eligible scan can import their previously unknown IDs.
-- [ ] 2.4 `npm run lint` and `npm run check` pass.
+- [x] 2.1 Fixture tests discover an old-dated new ID, insert it once, and leave existing rows unchanged.
+- [x] 2.2 Bounded continuation reaches an empty page, resumes safely after failure, and reports skipped activities.
+- [x] 2.3 Tests prove bike-less/unknown-bicycle activities are counted and not written; a later eligible scan can import their previously unknown IDs.
+- [x] 2.4 `npm run lint` and `npm run check` pass.
 
 #### Manual
 
-- [ ] 2.5 “Import new” works after initial import and clearly reports or continues a partial run.
+- [x] 2.5 “Import new” works after initial import and clearly reports or continues a partial run.
 
 ### Phase 3: Repair full history and remove deleted activities
 

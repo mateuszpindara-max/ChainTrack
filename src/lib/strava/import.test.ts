@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   importStravaHistory,
+  syncNewStravaActivities,
   STRAVA_ACTIVITY_PAGE_SIZE,
+  STRAVA_ACTIVITY_PAGES_PER_SYNC,
+  type NewActivityInsert,
+  type NewActivitySyncRun,
+  type NewActivitySyncStore,
   type ImportResult,
   type ImportedActivity,
   type ImportStore,
@@ -27,6 +32,67 @@ class MemoryImportStore implements ImportStore {
       this.activities.set(activity.stravaActivityId, activity);
     }
     return Promise.resolve({ inserted, updated });
+  }
+}
+
+class MemoryNewActivitySyncStore implements NewActivitySyncStore {
+  bikes = new Map<string, StravaBike>();
+  activities = new Map<number, ImportedActivity & { bikeId: string }>();
+  run: NewActivitySyncRun;
+
+  constructor(runId = "sync-1") {
+    this.run = { id: runId, status: "running", nextPage: 1, insertedCount: 0, skippedCount: 0 };
+  }
+
+  upsertBikes(bikes: StravaBike[]) {
+    for (const bike of bikes) this.bikes.set(bike.id, bike);
+    return Promise.resolve();
+  }
+
+  getExistingActivityIds(activityIds: number[]) {
+    return Promise.resolve(new Set(activityIds.filter((activityId) => this.activities.has(activityId))));
+  }
+
+  getBikeIds(gearIds: string[]) {
+    return Promise.resolve(
+      new Map(gearIds.filter((gearId) => this.bikes.has(gearId)).map((gearId) => [gearId, `bike-row-${gearId}`])),
+    );
+  }
+
+  insertActivitiesOnly(activities: NewActivityInsert[]) {
+    let inserted = 0;
+    for (const activity of activities) {
+      if (this.activities.has(activity.stravaActivityId)) continue;
+      this.activities.set(activity.stravaActivityId, {
+        stravaActivityId: activity.stravaActivityId,
+        name: activity.name,
+        distanceMeters: activity.distanceMeters,
+        startedAt: activity.startedAt,
+        gearId: "bike-1",
+        bikeId: activity.bikeId,
+      });
+      inserted += 1;
+    }
+    return Promise.resolve(inserted);
+  }
+
+  advanceRun(input: {
+    runId: string;
+    expectedPage: number;
+    nextPage: number;
+    insertedDelta: number;
+    skippedDelta: number;
+    status: "running" | "partial" | "completed";
+  }) {
+    if (this.run.id !== input.runId || this.run.nextPage !== input.expectedPage) return Promise.resolve(null);
+    this.run = {
+      ...this.run,
+      status: input.status,
+      nextPage: input.nextPage,
+      insertedCount: this.run.insertedCount + input.insertedDelta,
+      skippedCount: this.run.skippedCount + input.skippedDelta,
+    };
+    return Promise.resolve(this.run);
   }
 }
 
@@ -162,4 +228,179 @@ void test("returns a failed outcome when no activity page can be saved", async (
   assert.equal(result.outcome, "failed");
   assert.equal(result.inserted, 0);
   assert.equal(result.updated, 0);
+});
+
+void test("discovers an old-dated activity once and leaves an existing activity unchanged", async () => {
+  const store = new MemoryNewActivitySyncStore();
+  const existing = {
+    stravaActivityId: 42,
+    name: "Locally preserved name",
+    distanceMeters: 9876,
+    startedAt: "2019-04-02T12:00:00Z",
+    gearId: "bike-1",
+    bikeId: "existing-bike-row",
+  };
+  store.activities.set(42, existing);
+  const lateVisible = { ...activity(43), start_date: "2017-05-01T08:00:00Z" };
+  const requestedPages: number[] = [];
+  const fetcher: typeof fetch = (input) => {
+    const url = inputUrl(input);
+    if (url.pathname.endsWith("/athlete")) {
+      return Promise.resolve(responseFor({ bikes: [{ id: "bike-1", name: "Road bike" }] }));
+    }
+    const page = Number(url.searchParams.get("page"));
+    requestedPages.push(page);
+    return Promise.resolve(responseFor(page === 1 ? [lateVisible, activity(42)] : []));
+  };
+
+  const first = await syncNewStravaActivities("fixture-token", store.run, store, fetcher);
+  assert.equal(first.outcome, "complete");
+  assert.equal(first.inserted, 1);
+  assert.deepEqual(store.activities.get(42), existing);
+  assert.equal(store.activities.get(43)?.startedAt, "2017-05-01T08:00:00Z");
+
+  const secondStore = new MemoryNewActivitySyncStore("sync-2");
+  secondStore.bikes = new Map(store.bikes);
+  secondStore.activities = new Map(store.activities);
+  const second = await syncNewStravaActivities("fixture-token", secondStore.run, secondStore, fetcher);
+  assert.equal(second.inserted, 0);
+  assert.deepEqual(secondStore.activities.get(42), existing);
+  assert.deepEqual(requestedPages, [1, 2, 1, 2]);
+  assert.equal(STRAVA_ACTIVITY_PAGES_PER_SYNC, 5);
+});
+
+void test("bounds batches to five pages and continues after a short non-empty page through the empty page", async () => {
+  const store = new MemoryNewActivitySyncStore();
+  const fullPage = Array.from({ length: STRAVA_ACTIVITY_PAGE_SIZE }, (_, index) => activity(index + 1));
+  const requestedPages: number[] = [];
+  const fetcher: typeof fetch = (input) => {
+    const url = inputUrl(input);
+    if (url.pathname.endsWith("/athlete")) {
+      return Promise.resolve(responseFor({ bikes: [{ id: "bike-1", name: "Road bike" }] }));
+    }
+    const page = Number(url.searchParams.get("page"));
+    requestedPages.push(page);
+    if (page <= STRAVA_ACTIVITY_PAGES_PER_SYNC) {
+      return Promise.resolve(
+        responseFor(fullPage.map((item) => ({ ...item, id: (page - 1) * STRAVA_ACTIVITY_PAGE_SIZE + item.id }))),
+      );
+    }
+    return Promise.resolve(responseFor(page === 6 ? [activity(1001)] : []));
+  };
+
+  const firstBatch = await syncNewStravaActivities("fixture-token", store.run, store, fetcher);
+  assert.equal(firstBatch.outcome, "partial");
+  assert.equal(firstBatch.inserted, STRAVA_ACTIVITY_PAGE_SIZE * STRAVA_ACTIVITY_PAGES_PER_SYNC);
+  assert.equal(firstBatch.nextPage, 6);
+  assert.deepEqual(requestedPages, [1, 2, 3, 4, 5]);
+
+  const secondBatch = await syncNewStravaActivities("fixture-token", store.run, store, fetcher);
+  assert.equal(secondBatch.outcome, "complete");
+  assert.equal(secondBatch.inserted, 1001);
+  assert.equal(store.activities.size, 1001);
+  assert.deepEqual(requestedPages, [1, 2, 3, 4, 5, 6, 7]);
+});
+
+void test("resumes from the saved page after a provider failure without duplicate inserts", async () => {
+  const store = new MemoryNewActivitySyncStore();
+  const firstPage = Array.from({ length: STRAVA_ACTIVITY_PAGE_SIZE }, (_, index) => activity(index + 1));
+  let failSecondPage = true;
+  const fetcher: typeof fetch = (input) => {
+    const url = inputUrl(input);
+    if (url.pathname.endsWith("/athlete")) {
+      return Promise.resolve(responseFor({ bikes: [{ id: "bike-1", name: "Road bike" }] }));
+    }
+    const page = Number(url.searchParams.get("page"));
+    if (page === 1) return Promise.resolve(responseFor(firstPage));
+    if (page === 2 && failSecondPage) {
+      failSecondPage = false;
+      return Promise.reject(new Error("temporary provider failure"));
+    }
+    return Promise.resolve(responseFor(page === 2 ? [activity(201)] : []));
+  };
+
+  const interrupted = await syncNewStravaActivities("fixture-token", store.run, store, fetcher);
+  assert.equal(interrupted.outcome, "partial");
+  assert.equal(interrupted.inserted, 200);
+  assert.equal(interrupted.nextPage, 2);
+  assert.equal(store.activities.size, 200);
+
+  const resumed = await syncNewStravaActivities("fixture-token", store.run, store, fetcher);
+  assert.equal(resumed.outcome, "complete");
+  assert.equal(resumed.inserted, 201);
+  assert.equal(store.activities.size, 201);
+});
+
+void test("a stale continuation cannot regress the saved cursor", async () => {
+  const store = new MemoryNewActivitySyncStore();
+  const existing = {
+    stravaActivityId: 1,
+    name: "Already stored",
+    distanceMeters: 100,
+    startedAt: "2026-10-13T12:00:00Z",
+    gearId: "bike-1",
+    bikeId: "bike-row-bike-1",
+  };
+  store.activities.set(existing.stravaActivityId, existing);
+  store.run = { ...store.run, status: "partial", nextPage: 3, insertedCount: 2, skippedCount: 1 };
+  const staleRun = { ...store.run, nextPage: 1 };
+  const fetcher: typeof fetch = (input) => {
+    const url = inputUrl(input);
+    if (url.pathname.endsWith("/athlete")) {
+      return Promise.resolve(responseFor({ bikes: [{ id: "bike-1", name: "Road bike" }] }));
+    }
+    return Promise.resolve(responseFor([activity(1)]));
+  };
+
+  const result = await syncNewStravaActivities("fixture-token", staleRun, store, fetcher);
+  assert.equal(result.outcome, "failed");
+  assert.equal(store.run.nextPage, 3);
+  assert.equal(store.run.insertedCount, 2);
+  assert.deepEqual(store.activities.get(1), existing);
+});
+
+void test("counts ineligible unknown activities and imports one on a later eligible scan", async () => {
+  const store = new MemoryNewActivitySyncStore();
+  let bikesAvailable = false;
+  const fetcher: typeof fetch = (input) => {
+    const url = inputUrl(input);
+    if (url.pathname.endsWith("/athlete")) {
+      return Promise.resolve(
+        responseFor({
+          bikes: bikesAvailable
+            ? [
+                { id: "bike-1", name: "Road bike" },
+                { id: "unknown-bike", name: "Newly added bike" },
+                { id: "ambiguous-bike", name: "First name" },
+                { id: "ambiguous-bike", name: "Conflicting name" },
+              ]
+            : [],
+        }),
+      );
+    }
+    const page = Number(url.searchParams.get("page"));
+    return Promise.resolve(
+      responseFor(
+        page === 1
+          ? [activity(70, null), activity(71, "bike-1"), activity(72, "unknown-bike"), activity(73, "ambiguous-bike")]
+          : [],
+      ),
+    );
+  };
+
+  const first = await syncNewStravaActivities("fixture-token", store.run, store, fetcher);
+  assert.equal(first.outcome, "complete");
+  assert.equal(first.skipped, 4);
+  assert.equal(store.activities.size, 0);
+
+  bikesAvailable = true;
+  const laterStore = new MemoryNewActivitySyncStore("sync-later");
+  laterStore.activities = new Map(store.activities);
+  const later = await syncNewStravaActivities("fixture-token", laterStore.run, laterStore, fetcher);
+  assert.equal(later.inserted, 2);
+  assert.equal(later.skipped, 2);
+  assert.equal(laterStore.activities.has(71), true);
+  assert.equal(laterStore.activities.has(72), true);
+  assert.equal(laterStore.activities.has(70), false);
+  assert.equal(laterStore.activities.has(73), false);
 });

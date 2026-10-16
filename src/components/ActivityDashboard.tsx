@@ -6,9 +6,19 @@ interface ImportResponse {
   inserted: number;
   updated: number;
   skipped: number;
+  mode?: "new";
+  runId?: string;
+  nextPage?: number;
+  status?: "running" | "partial" | "completed";
   message?: string;
   activities?: ActivityView[];
   hasMoreActivities?: boolean;
+}
+
+interface ActiveSyncRun {
+  id: string;
+  mode: "new" | "repair";
+  status: "running" | "partial";
 }
 
 interface ActivityPage {
@@ -22,6 +32,7 @@ interface Props {
   initialLoadError: boolean;
   initialHasMoreActivities: boolean;
   initialImportCompleted: boolean;
+  initialActiveSyncRun: ActiveSyncRun | null;
 }
 
 const subscribeToLocalTimeZone = (_onChange: () => void) => () => undefined;
@@ -34,6 +45,13 @@ function isImportResponse(value: unknown): value is ImportResponse {
     typeof response.inserted === "number" &&
     typeof response.updated === "number" &&
     typeof response.skipped === "number" &&
+    (response.mode === undefined || response.mode === "new") &&
+    (response.runId === undefined || typeof response.runId === "string") &&
+    (response.nextPage === undefined || typeof response.nextPage === "number") &&
+    (response.status === undefined ||
+      response.status === "running" ||
+      response.status === "partial" ||
+      response.status === "completed") &&
     (response.message === undefined || typeof response.message === "string") &&
     (response.activities === undefined || Array.isArray(response.activities))
   );
@@ -56,6 +74,15 @@ function LocalActivityDate({ value }: { value: string }) {
 }
 
 function resultMessage(result: ImportResponse): string {
+  if (result.mode === "new") {
+    if (result.outcome === "partial") {
+      return result.message ?? "This import is still scanning. Continue to check the remaining Strava activities.";
+    }
+    if (result.outcome === "failed") return result.message ?? "Import new failed. Retry from the saved page.";
+    return result.inserted === 0
+      ? "Import new complete. No eligible new activities were found."
+      : "Import new complete. Newly visible activities were added.";
+  }
   if (result.outcome === "partial" && result.message?.startsWith("This import batch is saved.")) return result.message;
   if (result.outcome === "partial")
     return result.message ?? "The import stopped early. Saved activities are safe to retry.";
@@ -72,6 +99,7 @@ export default function ActivityDashboard({
   initialLoadError,
   initialHasMoreActivities,
   initialImportCompleted,
+  initialActiveSyncRun,
 }: Props) {
   const [activities, setActivities] = useState(initialActivities);
   const [loading, setLoading] = useState(false);
@@ -80,10 +108,13 @@ export default function ActivityDashboard({
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [importCompleted, setImportCompleted] = useState(initialImportCompleted);
   const [importBatchHasMore, setImportBatchHasMore] = useState(false);
+  const [activeSyncRun, setActiveSyncRun] = useState(initialActiveSyncRun);
+  const [loadingAction, setLoadingAction] = useState<"initial" | "sync" | null>(null);
   const [result, setResult] = useState<ImportResponse | null>(null);
 
   async function importActivities() {
     setLoading(true);
+    setLoadingAction("initial");
     setResult(null);
     try {
       const response = await fetch("/api/strava/import", { method: "POST" });
@@ -111,6 +142,46 @@ export default function ActivityDashboard({
       });
     } finally {
       setLoading(false);
+      setLoadingAction(null);
+    }
+  }
+
+  async function synchronizeNewActivities() {
+    setLoading(true);
+    setLoadingAction("sync");
+    setResult(null);
+    try {
+      const response = await fetch("/api/strava/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "new", ...(activeSyncRun?.mode === "new" ? { runId: activeSyncRun.id } : {}) }),
+      });
+      const payload: unknown = await response.json();
+      if (!isImportResponse(payload)) throw new Error("The Strava synchronization returned an invalid response.");
+      setResult({ ...payload, mode: "new" });
+      if (payload.activities) setActivities(payload.activities);
+      if (payload.hasMoreActivities !== undefined) setHasMoreActivities(payload.hasMoreActivities);
+      if (payload.outcome === "complete") {
+        setActiveSyncRun(null);
+      } else if (payload.runId && payload.status !== "completed") {
+        setActiveSyncRun({
+          id: payload.runId,
+          mode: "new",
+          status: payload.status === "partial" ? "partial" : "running",
+        });
+      }
+    } catch (error) {
+      setResult({
+        outcome: "failed",
+        inserted: 0,
+        updated: 0,
+        skipped: 0,
+        mode: "new",
+        message: error instanceof Error ? error.message : "Strava synchronization failed.",
+      });
+    } finally {
+      setLoading(false);
+      setLoadingAction(null);
     }
   }
 
@@ -165,9 +236,36 @@ export default function ActivityDashboard({
           </p>
         </div>
         {connectionStatus === "connected" && importCompleted ? (
-          <p className="text-sm font-medium text-emerald-200" role="status">
-            Initial import complete
-          </p>
+          <details className="relative">
+            <summary className="inline-flex min-h-11 cursor-pointer list-none items-center justify-center rounded-md bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200">
+              Synchronize
+            </summary>
+            <div className="absolute right-0 z-10 mt-2 grid min-w-56 gap-1 rounded-md border border-white/15 bg-slate-950 p-1 shadow-xl">
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.currentTarget.closest("details")?.removeAttribute("open");
+                  void synchronizeNewActivities();
+                }}
+                disabled={loading || activeSyncRun?.mode === "repair"}
+                className="min-h-10 rounded px-3 py-2 text-left text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading && loadingAction === "sync"
+                  ? "Synchronizing..."
+                  : activeSyncRun?.mode === "new"
+                    ? "Continue Import new"
+                    : "Import new"}
+              </button>
+              <button
+                type="button"
+                disabled
+                title="Available in a later phase"
+                className="min-h-10 cursor-not-allowed rounded px-3 py-2 text-left text-sm font-medium text-white/45"
+              >
+                Repair full history
+              </button>
+            </div>
+          </details>
         ) : connectionStatus === "connected" ? (
           <button
             type="button"
@@ -202,7 +300,9 @@ export default function ActivityDashboard({
 
         {loading && (
           <p className="border-b border-white/10 py-4 text-sm text-blue-100" role="status" aria-live="polite">
-            Fetching bike details and activity history from Strava...
+            {loadingAction === "sync"
+              ? "Checking Strava for newly visible activities..."
+              : "Fetching bike details and activity history from Strava..."}
           </p>
         )}
         {initialLoadError && (
@@ -217,9 +317,11 @@ export default function ActivityDashboard({
             aria-live="polite"
           >
             <p className="text-sm font-medium">{resultMessage(result)}</p>
-            {result.outcome !== "failed" && (
+            {(result.outcome !== "failed" || result.mode === "new") && (
               <p className="mt-1 text-sm text-blue-100/70">
-                {result.inserted} new, {result.updated} updated, {result.skipped} skipped
+                {result.mode === "new"
+                  ? `${result.inserted} new, ${result.skipped} skipped`
+                  : `${result.inserted} new, ${result.updated} updated, ${result.skipped} skipped`}
               </p>
             )}
             {result.skipped > 0 && (

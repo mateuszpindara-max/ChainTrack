@@ -3,5 +3,15 @@
   "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact", "astro"],
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
+  },
+  "chat.tools.terminal.autoApprove": {
+    "/^node --experimental-strip-types --test src/lib/strava/import\\.test\\.ts$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "npx eslint": true,
+    "npx prettier": true,
+    "git add": true,
+    "git checkout": true
   }
 }
