@@ -49,7 +49,7 @@ Use `GET /api/strava/connect`, `GET /api/strava/callback`, and authenticated `PO
 
 ### Import and retry behavior
 
-Follow Strava activity pagination to exhaustion. Persist each successful page using the stable Strava activity ID; on later-page failure, return an explicit partial result and preserve already saved rows. A retry starts the initial history import again and upserts by the unique source key, so it cannot duplicate activities. Do not add a button or job for routine post-import refresh.
+Follow Strava activity pagination in bounded requests of at most five pages (1,000 activities) each. Persist every successful page using the stable Strava activity ID and persist the next unprocessed page on the user's connection row. A later-page failure or a completed batch returns an explicit partial result; retry resumes from the saved cursor. Advance the cursor with a compare-and-swap update so an overlapping stale request cannot move progress backward. Mark the initial import complete only after Strava returns a short or empty terminal page. Upserts by the unique source key keep retries idempotent. Do not add a button or job for routine post-import refresh.
 
 ## Phase 1: Strava access and local configuration
 
@@ -147,7 +147,7 @@ Import the user's bikes and all available history on an explicit user action, th
 
 **Intent**: Fetch Strava profile bikes and every activity page, then persist the smallest canonical record needed by S-01.
 
-**Contract**: Use the authenticated token with the approved scopes. Normalize the source activity ID, name, distance in meters, start date, and bike `gear_id`; match `gear_id` to a bike from the authenticated athlete profile. Upsert bikes and eligible activities under the current application user. Skip missing/unmatched bike IDs and return inserted/updated/skipped counts plus a complete, partial, or failed outcome.
+**Contract**: Use the authenticated token with the approved scopes. Normalize the source activity ID, name, distance in meters, start date, and bike `gear_id`; match `gear_id` to a bike from the authenticated athlete profile. Upsert bikes and eligible activities under the current application user. Fetch at most five activity pages per request; persist each successful page and compare-and-swap the connection's next-page cursor. A retry resumes from that cursor. Mark the initial import complete only after a short or empty terminal page. Skip missing/unmatched bike IDs and return inserted/updated/skipped counts plus a complete, partial, or failed outcome.
 
 #### 2. Add the connect/import and activity-list UI
 
@@ -170,7 +170,7 @@ Import the user's bikes and all available history on an explicit user action, th
 #### Automated Verification:
 
 - Mocked import tests fetch every page, match bikes by source ID, and exclude activities with missing or unmatched bike IDs while reporting their count.
-- A repeated import and a retry after a later-page failure preserve saved rows without duplicate `(user_id, strava_activity_id)` records and return an explicit partial result.
+- A bounded import stops after at most five pages, returns a continuation cursor, and a subsequent request resumes at that page; retry after a later-page failure preserves saved rows without duplicate `(user_id, strava_activity_id)` records and returns an explicit partial result.
 - Dashboard/API tests verify the required activity fields, kilometer display, local date, and newest-first ordering.
 
 #### Manual Verification:
@@ -217,7 +217,7 @@ Run repository checks and verify the full authorization/import flow against the 
 ### Unit Tests:
 
 - Use Node's built-in test runner for token encryption/decryption, fresh IVs, OAuth state validation, scope validation, and Strava response mapping.
-- Stub `fetch` for authorization exchange, expired access token refresh, rotating refresh token, paginated activities, `401`, `403`, `429`, `5xx`, timeout, malformed response, and empty history.
+- Stub `fetch` for authorization exchange, expired access token refresh, rotating refresh token, paginated activities, bounded batch continuation, later-page retry from the saved cursor, `401`, `403`, `429`, `5xx`, timeout, malformed response, and empty history.
 
 ### Integration Tests:
 
@@ -239,7 +239,7 @@ The PRD targets one low-volume user, so a background job is not warranted for th
 
 ## Migration Notes
 
-This adds new tables; no existing application data needs conversion. Enable RLS and uniqueness in the migration before exposing reads/writes. The migration is additive; do not drop the new tables during rollback after real user data has been accepted. Local reset must not depend on the currently missing `supabase/seed.sql`.
+This adds new tables and import-progress columns; no existing application data needs conversion. Existing Strava connections start with page 1 and an unset completion timestamp. Enable RLS and uniqueness in the migration before exposing reads/writes. The migration is additive; do not drop the new tables during rollback after real user data has been accepted. Local reset must not depend on the currently missing `supabase/seed.sql`.
 
 ## References
 
@@ -289,7 +289,7 @@ This adds new tables; no existing application data needs conversion. Enable RLS 
 
 #### Manual
 
-- [x] 3.4 [AGENT AI] The dashboard has a separate initial-import action and clear connected, loading, empty, success, partial, failure, and skipped-activity states; routine refresh and S-02 controls are absent. — 2890ed0
+- [x] 3.4 [AGENT AI] The dashboard has a separate initial-import action, explicit continuation for bounded batches, and clear connected, loading, empty, success, partial, failure, and skipped-activity states; routine refresh and S-02 controls are absent. — 2890ed0
 
 ### Phase 4: End-to-end verification and user acceptance
 

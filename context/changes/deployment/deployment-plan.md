@@ -111,7 +111,7 @@ BASE_URL=http://localhost:4321 npm run smoke
 
 - [ ] **[AGENT AI] Zweryfikuj kod auth.** Sprawdź `src/lib/supabase.ts`, `src/middleware.ts` i `src/pages/api/auth/` pod kątem walidacji, cookies, redirectów i ochrony `/dashboard`. Agent nie odczytuje wartości sekretów.
 
-- [ ] **[CZŁOWIEK] Dodaj sekrety do Workera.** Po utworzeniu projektu Supabase ustaw `SUPABASE_URL` i `SUPABASE_KEY` w produkcyjnym Workerze przez panel Cloudflare albo `npx wrangler secret put`. Wartości wpisuj bezpośrednio, bez zapisywania ich w repozytorium ani rozmowie.
+- [ ] **[CZŁOWIEK] Dodaj sekrety do Workera.** Ustaw `SUPABASE_URL`, `SUPABASE_KEY`, `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_REDIRECT_URI` i `STRAVA_TOKEN_ENCRYPTION_KEY` w produkcyjnym Workerze przez panel Cloudflare albo `npx wrangler secret put`. Ustaw Strava redirect URI na dokładny publiczny URL Workera z `/api/strava/callback`; wprowadź wartości bezpośrednio, bez zapisywania ich w repozytorium ani rozmowie.
 
 ## Etap 7: GitHub i Workers Builds
 
@@ -141,15 +141,10 @@ BASE_URL=http://localhost:4321 npm run smoke
 
 - [ ] **[AGENT AI] Pomóż analizować logi.** Agent może analizować zanonimizowane logi, błędy buildu i wyniki testów. Nigdy nie przekazuj mu haseł, tokenów, cookies, pełnych payloadów dostawcy ani danych użytkowników.
 
-## Późniejsza integracja dostawcy aktywności
+## Integracja Strava
 
-1. **[CZŁOWIEK] Wybierz dostawcę i załóż konto deweloperskie.** Przeczytaj limity API, model autoryzacji, zasady webhooków, retencję danych i wymagania aplikacji. Utwórz osobne credentials dla środowiska testowego i produkcji.
-
-2. **[AGENT AI] Zaimplementuj adapter.** Agent może dodać adapter w `src/lib`, typy w `src/types.ts`, walidację odpowiedzi, timeouty, paginację, limity payloadów, bezpieczne retry i idempotentną synchronizację.
-
-3. **[WSPÓLNIE] Zdefiniuj macierz błędów.** Agent przygotowuje testy fixture/mock dla `401`, `403`, `404`, `409`, `429`, `5xx`, timeoutu, pustej strony, duplikatu i niepoprawnej odpowiedzi. Człowiek potwierdza zachowanie biznesowe i sprawdza, że CI nigdy nie woła prawdziwego API.
-
-4. **[CZŁOWIEK] Zatwierdź pierwszą synchronizację.** Najpierw uruchom ją w środowisku testowym z ograniczonym kontem testowym. Produkcję włącz dopiero po sprawdzeniu limitów, deduplikacji i sposobu wycofania błędnej synchronizacji.
+- **[CZŁOWIEK] Skonfiguruj aplikację Strava dla produkcji.** Ustaw publiczny host Workera jako callback domain oraz `https://<worker-host>/api/strava/callback` jako redirect URI. Przyznaj wymagane scope'y `activity:read_all` i `profile:read_all`.
+- **[CZŁOWIEK] Zweryfikuj połączenie i import.** Po ustawieniu wszystkich sześciu sekretów autoryzuj konto Strava, uruchom początkowy import z dashboardu i sprawdź bike-linked history oraz brak ujawnionych tokenów w URL, odpowiedzi, stronie i logach.
 
 ## Bramki odbioru
 

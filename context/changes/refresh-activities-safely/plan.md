@@ -255,13 +255,13 @@ Additive migration only. Existing rows keep their source identity and provider v
 
 #### Automated
 
-- [x] 1.1 `npx supabase db reset` applies the additive sync-state migration.
-- [x] 1.2 Database tests prove sync-state ownership, active-run uniqueness, nullable bike behavior, and atomic dependent deletion.
-- [x] 1.3 `npm run lint` and `npm run check` pass.
+- [x] 1.1 `npx supabase db reset` applies the additive sync-state migration. — 1bc711c
+- [x] 1.2 Database tests prove sync-state ownership, active-run uniqueness, nullable bike behavior, and atomic dependent deletion. — 1bc711c
+- [x] 1.3 `npm run lint` and `npm run check` pass. — 1bc711c
 
 #### Manual
 
-- [x] 1.4 The S-02 contract in PRD, shape notes, roadmap, and implementation plan agrees on both modes, unmatched activities, and deletion behavior.
+- [x] 1.4 The S-02 contract in PRD, shape notes, roadmap, and implementation plan agrees on both modes, unmatched activities, and deletion behavior. — 1bc711c
 
 ### Phase 2: Import newly visible activities
 

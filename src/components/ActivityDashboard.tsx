@@ -8,12 +8,20 @@ interface ImportResponse {
   skipped: number;
   message?: string;
   activities?: ActivityView[];
+  hasMoreActivities?: boolean;
+}
+
+interface ActivityPage {
+  activities: ActivityView[];
+  hasMore: boolean;
 }
 
 interface Props {
   connectionStatus: "connected" | "not-connected" | "unavailable";
   initialActivities: ActivityView[];
   initialLoadError: boolean;
+  initialHasMoreActivities: boolean;
+  initialImportCompleted: boolean;
 }
 
 const subscribeToLocalTimeZone = (_onChange: () => void) => () => undefined;
@@ -31,6 +39,12 @@ function isImportResponse(value: unknown): value is ImportResponse {
   );
 }
 
+function isActivityPage(value: unknown): value is ActivityPage {
+  if (typeof value !== "object" || value === null) return false;
+  const page = value as Record<string, unknown>;
+  return Array.isArray(page.activities) && typeof page.hasMore === "boolean";
+}
+
 function LocalActivityDate({ value }: { value: string }) {
   const date = useSyncExternalStore(
     subscribeToLocalTimeZone,
@@ -42,6 +56,7 @@ function LocalActivityDate({ value }: { value: string }) {
 }
 
 function resultMessage(result: ImportResponse): string {
+  if (result.outcome === "partial" && result.message?.startsWith("This import batch is saved.")) return result.message;
   if (result.outcome === "partial")
     return result.message ?? "The import stopped early. Saved activities are safe to retry.";
   if (result.outcome === "failed") return result.message ?? "The activity import failed. Please try again.";
@@ -51,9 +66,20 @@ function resultMessage(result: ImportResponse): string {
   return "Import complete. Your bike-linked history is up to date.";
 }
 
-export default function ActivityDashboard({ connectionStatus, initialActivities, initialLoadError }: Props) {
+export default function ActivityDashboard({
+  connectionStatus,
+  initialActivities,
+  initialLoadError,
+  initialHasMoreActivities,
+  initialImportCompleted,
+}: Props) {
   const [activities, setActivities] = useState(initialActivities);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreActivities, setHasMoreActivities] = useState(initialHasMoreActivities);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
+  const [importCompleted, setImportCompleted] = useState(initialImportCompleted);
+  const [importBatchHasMore, setImportBatchHasMore] = useState(false);
   const [result, setResult] = useState<ImportResponse | null>(null);
 
   async function importActivities() {
@@ -66,6 +92,15 @@ export default function ActivityDashboard({ connectionStatus, initialActivities,
       if (!response.ok) throw new Error(payload.message ?? "The activity import could not be started.");
       setResult(payload);
       if (payload.activities) setActivities(payload.activities);
+      if (payload.hasMoreActivities !== undefined) setHasMoreActivities(payload.hasMoreActivities);
+      if (payload.outcome === "complete") {
+        setImportCompleted(true);
+        setImportBatchHasMore(false);
+      } else if (payload.outcome === "partial" && payload.message?.startsWith("This import batch is saved.")) {
+        setImportBatchHasMore(true);
+      } else {
+        setImportBatchHasMore(false);
+      }
     } catch (error) {
       setResult({
         outcome: "failed",
@@ -76,6 +111,23 @@ export default function ActivityDashboard({ connectionStatus, initialActivities,
       });
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadMoreActivities() {
+    setLoadingMore(true);
+    setLoadMoreError(null);
+    try {
+      const response = await fetch(`/api/strava/activities?offset=${activities.length}`);
+      const payload: unknown = await response.json();
+      if (!isActivityPage(payload)) throw new Error("The activity page returned an invalid response.");
+      if (!response.ok) throw new Error("Activities could not be loaded.");
+      setActivities((current) => [...current, ...payload.activities]);
+      setHasMoreActivities(payload.hasMore);
+    } catch (error) {
+      setLoadMoreError(error instanceof Error ? error.message : "Activities could not be loaded.");
+    } finally {
+      setLoadingMore(false);
     }
   }
 
@@ -112,14 +164,18 @@ export default function ActivityDashboard({ connectionStatus, initialActivities,
                 : "Connection status unavailable"}
           </p>
         </div>
-        {connectionStatus === "connected" ? (
+        {connectionStatus === "connected" && importCompleted ? (
+          <p className="text-sm font-medium text-emerald-200" role="status">
+            Initial import complete
+          </p>
+        ) : connectionStatus === "connected" ? (
           <button
             type="button"
             onClick={importActivities}
             disabled={loading}
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200 disabled:cursor-wait disabled:opacity-60"
           >
-            {loading ? "Importing activities..." : "Import activities"}
+            {loading ? "Importing activities..." : importBatchHasMore ? "Continue import" : "Import activities"}
           </button>
         ) : connectionStatus === "not-connected" ? (
           <a
@@ -199,6 +255,21 @@ export default function ActivityDashboard({ connectionStatus, initialActivities,
               </li>
             ))}
           </ul>
+        )}
+        {loadMoreError && (
+          <p className="py-4 text-sm text-amber-200" role="status">
+            {loadMoreError}
+          </p>
+        )}
+        {hasMoreActivities && (
+          <button
+            type="button"
+            onClick={loadMoreActivities}
+            disabled={loadingMore}
+            className="mt-5 min-h-10 rounded-md border border-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-wait disabled:opacity-60"
+          >
+            {loadingMore ? "Loading activities..." : "Load more"}
+          </button>
         )}
       </section>
     </main>

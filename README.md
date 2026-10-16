@@ -163,7 +163,7 @@ npm run build
 npx wrangler deploy
 ```
 
-Set `SUPABASE_URL` and `SUPABASE_KEY` as secrets in your Cloudflare dashboard or via `npx wrangler secret put`.
+Set `SUPABASE_URL`, `SUPABASE_KEY`, `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_REDIRECT_URI`, and `STRAVA_TOKEN_ENCRYPTION_KEY` as Cloudflare Worker secrets. Set the Strava redirect URI to the deployed Worker host's `/api/strava/callback` URL; never commit secret values.
 
 ## Smoke test
 

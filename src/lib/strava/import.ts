@@ -1,4 +1,5 @@
 export const STRAVA_ACTIVITY_PAGE_SIZE = 200;
+export const STRAVA_ACTIVITY_PAGES_PER_IMPORT = 5;
 
 export interface StravaBike {
   id: string;
@@ -26,6 +27,7 @@ export interface ImportStore {
 export interface ImportResult extends ActivityUpsertCounts {
   outcome: "complete" | "partial" | "failed";
   skipped: number;
+  nextPage: number;
   message?: string;
 }
 
@@ -86,10 +88,17 @@ export async function importStravaHistory(
   accessToken: string,
   store: ImportStore,
   fetcher: typeof fetch = fetch,
+  options: { startPage?: number; maxPages?: number } = {},
 ): Promise<ImportResult> {
   const counts: ActivityUpsertCounts = { inserted: 0, updated: 0 };
+  const startPage = options.startPage ?? 1;
+  const maxPages = options.maxPages ?? STRAVA_ACTIVITY_PAGES_PER_IMPORT;
+  if (!Number.isSafeInteger(startPage) || startPage < 1 || !Number.isSafeInteger(maxPages) || maxPages < 1) {
+    throw new Error("Invalid Strava import page bounds");
+  }
   let skipped = 0;
   let completedPages = 0;
+  let nextPage = startPage;
 
   try {
     const athleteUrl = new URL("https://www.strava.com/api/v3/athlete");
@@ -101,7 +110,7 @@ export async function importStravaHistory(
     await store.upsertBikes(bikes);
 
     const seenActivityIds = new Set<number>();
-    for (let page = 1; ; page += 1) {
+    for (let page = startPage; page < startPage + maxPages; page += 1) {
       const activitiesUrl = new URL("https://www.strava.com/api/v3/athlete/activities");
       activitiesUrl.searchParams.set("page", String(page));
       activitiesUrl.searchParams.set("per_page", String(STRAVA_ACTIVITY_PAGE_SIZE));
@@ -134,16 +143,26 @@ export async function importStravaHistory(
         counts.updated += pageCounts.updated;
       }
       completedPages += 1;
-      if (response.length < STRAVA_ACTIVITY_PAGE_SIZE) break;
+      nextPage = page + 1;
+      if (response.length < STRAVA_ACTIVITY_PAGE_SIZE) {
+        return { outcome: "complete", ...counts, skipped, nextPage };
+      }
     }
 
-    return { outcome: "complete", ...counts, skipped };
+    return {
+      outcome: "partial",
+      ...counts,
+      skipped,
+      nextPage,
+      message: "This import batch is saved. Continue the import to fetch the remaining history.",
+    };
   } catch {
     const partial = completedPages > 0;
     return {
       outcome: partial ? "partial" : "failed",
       ...counts,
       skipped,
+      nextPage,
       message: partial
         ? "Some history was saved, but the import stopped before all pages completed. Retry to continue safely."
         : "The Strava history import could not be completed.",

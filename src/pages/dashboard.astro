@@ -8,12 +8,14 @@ const { user } = Astro.locals;
 let connectionStatus: "connected" | "not-connected" | "unavailable" = "unavailable";
 let initialActivities = [] as ReturnType<typeof toActivityViews>;
 let initialLoadError = false;
+let initialHasMoreActivities = false;
+let initialImportCompleted = false;
 
 const supabase = createClient(Astro.request.headers, Astro.cookies);
 if (supabase && user) {
   const { data: connection, error: connectionError } = await supabase
     .from("strava_connections")
-    .select("user_id")
+    .select("user_id, initial_import_completed_at")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -23,19 +25,23 @@ if (supabase && user) {
     connectionStatus = "not-connected";
   } else {
     connectionStatus = "connected";
+    initialImportCompleted = Boolean(connection.initial_import_completed_at);
     const [{ data: activities, error: activityError }, { data: bikes, error: bikeError }] = await Promise.all([
       supabase
         .from("activities")
         .select("id, name, distance_meters, started_at, bike_id")
         .eq("user_id", user.id)
-        .order("started_at", { ascending: false }),
+        .order("started_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(0, 100),
       supabase.from("bikes").select("id, name").eq("user_id", user.id),
     ]);
 
     if (activityError || bikeError) {
       initialLoadError = true;
     } else {
-      initialActivities = toActivityViews(activities, bikes);
+      initialHasMoreActivities = activities.length > 100;
+      initialActivities = toActivityViews(activities.slice(0, 100), bikes);
     }
   }
 }
@@ -48,6 +54,8 @@ if (supabase && user) {
       connectionStatus={connectionStatus}
       initialActivities={initialActivities}
       initialLoadError={initialLoadError}
+      initialHasMoreActivities={initialHasMoreActivities}
+      initialImportCompleted={initialImportCompleted}
     />
   </div>
 </Layout>
