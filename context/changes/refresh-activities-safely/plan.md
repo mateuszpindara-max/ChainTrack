@@ -267,28 +267,28 @@ Additive migration only. Existing rows keep their source identity and provider v
 
 #### Automated
 
-- [x] 2.1 Fixture tests discover an old-dated new ID, insert it once, and leave existing rows unchanged.
-- [x] 2.2 Bounded continuation reaches an empty page, resumes safely after failure, and reports skipped activities.
-- [x] 2.3 Tests prove bike-less/unknown-bicycle activities are counted and not written; a later eligible scan can import their previously unknown IDs.
-- [x] 2.4 `npm run lint` and `npm run check` pass.
+- [x] 2.1 Fixture tests discover an old-dated new ID, insert it once, and leave existing rows unchanged. — 380577a
+- [x] 2.2 Bounded continuation reaches an empty page, resumes safely after failure, and reports skipped activities. — 380577a
+- [x] 2.3 Tests prove bike-less/unknown-bicycle activities are counted and not written; a later eligible scan can import their previously unknown IDs. — 380577a
+- [x] 2.4 `npm run lint` and `npm run check` pass. — 380577a
 
 #### Manual
 
-- [x] 2.5 “Import new” works after initial import and clearly reports or continues a partial run.
+- [x] 2.5 “Import new” works after initial import and clearly reports or continues a partial run. — 380577a
 
 ### Phase 3: Repair full history and remove deleted activities
 
 #### Automated
 
-- [ ] 3.1 Tests refresh all persisted provider fields and bike assignment, while retaining unmatched rows hidden from the bike-linked list.
-- [ ] 3.2 Tests delete only verified provider-deleted rows and dependents after a complete scan; partial/error cases preserve unverified rows.
-- [ ] 3.3 Tests prove a partial page scan, concurrent run conflict, and provider failures never cause unverified deletion.
-- [ ] 3.4 Database tests prove finalization is user-scoped and atomic, including dependent-row deletion.
-- [ ] 3.5 Dashboard/API tests cover repair selection, counts, continuation, and list refresh.
+- [x] 3.1 Tests refresh all persisted provider fields and bike assignment, while retaining unmatched rows hidden from the bike-linked list.
+- [x] 3.2 Tests delete only verified provider-deleted rows and dependents after a complete scan; partial/error cases preserve unverified rows.
+- [x] 3.3 Tests prove a partial page scan, concurrent run conflict, and provider failures never cause unverified deletion.
+- [x] 3.4 Database tests prove finalization is user-scoped and atomic, including dependent-row deletion.
+- [x] 3.5 Dashboard/API tests cover repair selection, counts, continuation, and list refresh.
 
 #### Manual
 
-- [ ] 3.6 Repair updates a representative old Strava activity and removes a deleted activity only after complete verification.
+- [x] 3.6 Repair updates a representative old Strava activity and removes a deleted activity only after complete verification.
 
 ### Phase 4: End-to-end verification and acceptance
 

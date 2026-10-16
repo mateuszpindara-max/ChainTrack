@@ -1,6 +1,6 @@
 begin;
 
-select plan(44);
+select plan(52);
 
 insert into auth.users (id, aud, role, email, encrypted_password, email_confirmed_at)
 values
@@ -15,7 +15,9 @@ values
 insert into public.activities (user_id, bike_id, strava_activity_id, name, distance_meters, started_at)
 values
   ('10000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000011', 101, 'Ride A', 1000, now()),
-  ('20000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000022', 202, 'Ride B', 2000, now());
+  ('20000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000022', 202, 'Ride B', 2000, now()),
+  ('10000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000011', 107, 'Verified deletion', 1000, now()),
+  ('10000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000011', 108, 'Unverified candidate', 1000, now());
 
 insert into public.strava_oauth_states (state_hash, user_id, expires_at)
 values
@@ -53,11 +55,12 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000001', true);
 
 select is((select count(*)::integer from public.bikes), 1, 'user reads only their own bikes');
-select is((select count(*)::integer from public.activities), 1, 'user reads only their own activities');
+select is((select count(*)::integer from public.activities), 3, 'user reads only their own activities');
 select is((select count(*)::integer from public.strava_oauth_states), 1, 'user reads only their own OAuth states');
 select is((select count(*)::integer from public.strava_connections), 1, 'user reads only their own Strava connection');
 select is((select count(*)::integer from public.strava_sync_runs), 1, 'user reads only their own sync runs');
 select is((select count(*)::integer from public.strava_sync_activity_ids), 1, 'user reads only their own staged activity IDs');
+select is((select count(*)::integer from public.strava_sync_deleted_activity_ids), 0, 'user reads only their own verified deletion candidates');
 select lives_ok($$insert into public.bikes (user_id, strava_gear_id, name) values (auth.uid(), 'gear-own-write', 'Owned bike')$$, 'user can insert their own bike');
 select lives_ok($$insert into public.activities (user_id, bike_id, strava_activity_id, name, distance_meters, started_at) values (auth.uid(), '10000000-0000-0000-0000-000000000011', 505, 'Owned ride', 500, now())$$, 'user can insert their own activity');
 select throws_ok($$insert into public.strava_oauth_states (state_hash, user_id, expires_at) values (repeat('e', 64), auth.uid(), now() + interval '5 minutes')$$, '23505', null, 'user can have only one pending OAuth state');
@@ -79,8 +82,20 @@ select lives_ok($$update public.strava_sync_runs set status = 'partial' where id
 select is((select count(*)::integer from public.strava_sync_activity_ids), 2, 'partial repair retains staged activity IDs');
 select throws_ok($$insert into public.strava_sync_runs (user_id, mode) values (auth.uid(), 'repair')$$, '23505', null, 'partial run remains the user active run');
 select lives_ok($$insert into public.strava_sync_activity_ids (user_id, sync_run_id, strava_activity_id) values (auth.uid(), '10000000-0000-0000-0000-000000000031', 906)$$, 'user can resume staging IDs for a partial repair run');
-select lives_ok($$update public.strava_sync_runs set status = 'completed' where id = '10000000-0000-0000-0000-000000000031'$$, 'user can finalize their sync run');
+set local role postgres;
+insert into public.strava_rls_test_activity_dependents (activity_id)
+select id from public.activities where strava_activity_id = 107;
+set local role authenticated;
+update public.strava_sync_runs set scan_complete = true where id = '10000000-0000-0000-0000-000000000031';
+select lives_ok($$insert into public.strava_sync_deleted_activity_ids (user_id, sync_run_id, strava_activity_id) values (auth.uid(), '10000000-0000-0000-0000-000000000031', 107)$$, 'user can stage a verified not-found activity');
+select throws_ok($$insert into public.strava_sync_deleted_activity_ids (user_id, sync_run_id, strava_activity_id) values ('20000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000032', 202)$$, '42501', null, 'user cannot stage another user verified deletion');
+select lives_ok($$select public.finalize_strava_sync_run('10000000-0000-0000-0000-000000000031', 0)$$, 'user atomically finalizes their completed repair run');
 select is((select count(*)::integer from public.strava_sync_activity_ids), 0, 'finalizing a run clears its staged IDs');
+select is((select count(*)::integer from public.strava_sync_deleted_activity_ids), 0, 'finalizing a run clears verified deletion staging');
+select is((select count(*)::integer from public.activities where strava_activity_id = 107), 0, 'finalization deletes only the verified absent activity');
+select is((select count(*)::integer from public.strava_rls_test_activity_dependents), 0, 'finalization cascades dependent records atomically');
+select is((select count(*)::integer from public.activities where strava_activity_id = 108), 1, 'finalization retains candidates without verified absence');
+select throws_ok($$select public.finalize_strava_sync_run('20000000-0000-0000-0000-000000000032', 0)$$, '42501', null, 'user cannot finalize another user repair run');
 
 update public.bikes set name = 'Changed' where user_id = '20000000-0000-0000-0000-000000000002';
 delete from public.bikes where user_id = '20000000-0000-0000-0000-000000000002';

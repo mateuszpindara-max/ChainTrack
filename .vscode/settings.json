@@ -12,6 +12,18 @@
     "npx eslint": true,
     "npx prettier": true,
     "git add": true,
-    "git checkout": true
+    "git checkout": true,
+    "pbcopy": true,
+    "clip.exe": true,
+    "xclip": true,
+    "true": true,
+    "git rev-parse": true,
+    "command": true,
+    "npx supabase": true,
+    "/^node --experimental-strip-types --test --test-name-pattern='repair verifies absent local IDs only after the empty page' src/lib/strava/import\\.test\\.ts$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "npx tsc": true
   }
 }

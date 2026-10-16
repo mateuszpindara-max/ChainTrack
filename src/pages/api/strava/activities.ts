@@ -21,6 +21,7 @@ export const GET: APIRoute = async (context) => {
       .from("activities")
       .select("id, name, distance_meters, started_at, bike_id")
       .eq("user_id", user.id)
+      .not("bike_id", "is", null)
       .order("started_at", { ascending: false })
       .order("id", { ascending: false })
       .range(offsetValue, offsetValue + PAGE_SIZE),

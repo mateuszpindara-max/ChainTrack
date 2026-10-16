@@ -69,6 +69,8 @@ export interface StravaSyncDatabase {
           updated_count: number;
           skipped_count: number;
           removed_count: number;
+          scan_complete: boolean;
+          verification_step: number;
           created_at: string;
         },
         {
@@ -81,12 +83,27 @@ export interface StravaSyncDatabase {
           updated_count?: number;
           skipped_count?: number;
           removed_count?: number;
+          scan_complete?: boolean;
+          verification_step?: number;
           created_at?: string;
         }
       >;
+      strava_sync_activity_ids: Table<
+        { user_id: string; sync_run_id: string; strava_activity_id: number },
+        { user_id: string; sync_run_id: string; strava_activity_id: number }
+      >;
+      strava_sync_deleted_activity_ids: Table<
+        { user_id: string; sync_run_id: string; strava_activity_id: number },
+        { user_id: string; sync_run_id: string; strava_activity_id: number }
+      >;
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      finalize_strava_sync_run: {
+        Args: { p_run_id: string; p_expected_verification_step: number };
+        Returns: number;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
