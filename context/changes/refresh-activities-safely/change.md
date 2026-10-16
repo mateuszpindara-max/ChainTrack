@@ -1,7 +1,7 @@
 ---
 change_id: refresh-activities-safely
 title: Add new-activity sync and historical reconciliation
-status: implementing
+status: implemented
 created: 2026-10-16
 updated: 2026-10-16
 archived_at: null

@@ -294,9 +294,9 @@ Additive migration only. Existing rows keep their source identity and provider v
 
 #### Automated
 
-- [x] 4.1 `npm test`, `npx supabase db reset`, `npx supabase test db`, `npm run lint`, `npm run validate:config`, `npm run build`, and `npm run smoke` pass.
-- [x] 4.2 Automated fixture coverage proves both sync modes, duplicate safety, pagination continuation, current-field/bike repair, hidden unmatched rows, and verified deletion behavior.
+- [x] 4.1 `npm test`, `npx supabase db reset`, `npx supabase test db`, `npm run lint`, `npm run validate:config`, `npm run build`, and `npm run smoke` pass. — 9ca1ff1
+- [x] 4.2 Automated fixture coverage proves both sync modes, duplicate safety, pagination continuation, current-field/bike repair, hidden unmatched rows, and verified deletion behavior. — 9ca1ff1
 
 #### Manual
 
-- [x] 4.3 The user accepts both sync modes, unmatched/deleted behavior, and confirms no Strava secret or token is exposed.
+- [x] 4.3 The user accepts both sync modes, unmatched/deleted behavior, and confirms no Strava secret or token is exposed. — 9ca1ff1
