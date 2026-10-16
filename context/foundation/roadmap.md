@@ -41,7 +41,7 @@ Właściciel wielu rowerów ma trudność z pamiętaniem, ile kilometrów przeje
 
 | ID   | Change ID                     | Outcome (user can …)                                            | Prerequisites | PRD refs                              | Status   |
 | ---- | ----------------------------- | --------------------------------------------------------------- | ------------- | ------------------------------------- | -------- |
-| S-01 | import-bike-linked-activities | importować i przeglądać nazwę, dystans, datę i rower aktywności | —             | FR-001, FR-002                        | in-progress |
+| S-01 | import-bike-linked-activities | importować i przeglądać nazwę, dystans, datę i rower aktywności | —             | FR-001, FR-002                        | done |
 | S-02 | refresh-activities-safely     | ręcznie importować nowe wpisy niezależnie od daty albo naprawiać całą historię; ukrywać niedopasowane i usuwać skasowane wraz z danymi zależnymi po pełnej weryfikacji, bez duplikatów | S-01          | FR-003                                | in-progress |
 | S-03 | create-chain                  | tworzyć własny łańcuch                                          | —             | FR-004                                | ready    |
 | S-04 | assign-chain-and-mark-waxing  | przypisać łańcuch do aktywności i oznaczyć woskowanie           | S-01, S-03    | US-01, FR-005, FR-006, Access Control | proposed |
@@ -84,7 +84,7 @@ Brak osobnych fundamentów. Uwierzytelnianie i wdrożenie są już obecne; minim
 - **Unknowns:**
   - Czy dostęp do Strava i wymagane dane aplikacji są gotowe do użycia? — Owner: user. Block: yes.
 - **Risk:** Bez działającego dostępu do źródła aktywności nie da się zweryfikować najważniejszej zależności całego przepływu.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-02: Ręczna aktualizacja aktywności
 
@@ -158,3 +158,5 @@ Brak pytań przekrojowych. Potwierdzenie dostępu do Strava blokujące `S-01` zn
 ## Milestone History
 
 ## Done
+
+- **S-01: Użytkownik widzi aktywności przypisane do rowerów.** — Archived 2026-10-16 → `context/archive/2026-09-28-import-bike-linked-activities/`. Lesson: —.
