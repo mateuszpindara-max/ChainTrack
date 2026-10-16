@@ -280,23 +280,23 @@ Additive migration only. Existing rows keep their source identity and provider v
 
 #### Automated
 
-- [x] 3.1 Tests refresh all persisted provider fields and bike assignment, while retaining unmatched rows hidden from the bike-linked list.
-- [x] 3.2 Tests delete only verified provider-deleted rows and dependents after a complete scan; partial/error cases preserve unverified rows.
-- [x] 3.3 Tests prove a partial page scan, concurrent run conflict, and provider failures never cause unverified deletion.
-- [x] 3.4 Database tests prove finalization is user-scoped and atomic, including dependent-row deletion.
-- [x] 3.5 Dashboard/API tests cover repair selection, counts, continuation, and list refresh.
+- [x] 3.1 Tests refresh all persisted provider fields and bike assignment, while retaining unmatched rows hidden from the bike-linked list. — 2e1fe4f
+- [x] 3.2 Tests delete only verified provider-deleted rows and dependents after a complete scan; partial/error cases preserve unverified rows. — 2e1fe4f
+- [x] 3.3 Tests prove a partial page scan, concurrent run conflict, and provider failures never cause unverified deletion. — 2e1fe4f
+- [x] 3.4 Database tests prove finalization is user-scoped and atomic, including dependent-row deletion. — 2e1fe4f
+- [x] 3.5 Dashboard/API tests cover repair selection, counts, continuation, and list refresh. — 2e1fe4f
 
 #### Manual
 
-- [x] 3.6 Repair updates a representative old Strava activity and removes a deleted activity only after complete verification.
+- [x] 3.6 Repair updates a representative old Strava activity and removes a deleted activity only after complete verification. — 2e1fe4f
 
 ### Phase 4: End-to-end verification and acceptance
 
 #### Automated
 
-- [ ] 4.1 `npm test`, `npx supabase db reset`, `npx supabase test db`, `npm run lint`, `npm run validate:config`, `npm run build`, and `npm run smoke` pass.
-- [ ] 4.2 Automated fixture coverage proves both sync modes, duplicate safety, pagination continuation, current-field/bike repair, hidden unmatched rows, and verified deletion behavior.
+- [x] 4.1 `npm test`, `npx supabase db reset`, `npx supabase test db`, `npm run lint`, `npm run validate:config`, `npm run build`, and `npm run smoke` pass.
+- [x] 4.2 Automated fixture coverage proves both sync modes, duplicate safety, pagination continuation, current-field/bike repair, hidden unmatched rows, and verified deletion behavior.
 
 #### Manual
 
-- [ ] 4.3 The user accepts both sync modes, unmatched/deleted behavior, and confirms no Strava secret or token is exposed.
+- [x] 4.3 The user accepts both sync modes, unmatched/deleted behavior, and confirms no Strava secret or token is exposed.
