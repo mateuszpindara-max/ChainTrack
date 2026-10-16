@@ -93,8 +93,8 @@ przebieg od ostatniego woskowania — są poza pierwszym milestone'em.
   > Socrates: Rozważono argument, że aplikacja mogłaby działać tylko dla jednego użytkownika bez logowania. Pozostaje w MVP, ponieważ brak logowania utrudniłby ochronę danych użytkownika.
 - FR-002: Użytkownik może pobrać dane ze Stravy. Priority: must-have
   > Socrates: Nie zidentyfikowano kontrargumentu, który uzasadniałby usunięcie wymagania. Pozostaje bez zmian.
-- FR-003: Użytkownik może ręcznie uruchomić aktualizację danych ze Stravy. Priority: must-have
-  > Socrates: Rozważono ryzyko duplikatów i niejasnej informacji o wyniku aktualizacji. Wymaganie pozostaje, ale aktualizacja musi jasno wskazywać wynik i nie powielać aktywności.
+- FR-003: Użytkownik może ręcznie uruchomić jedną z dwóch aktualizacji danych ze Stravy: import nowo widocznych aktywności niezależnie od daty jazdy albo naprawę całej historii, która odświeża obecnie zapisywane pola i przypisania roweru. Aktywności nadal obecne w Stravie, ale bez jednoznacznego roweru, są zachowane i ukryte; aktywności usunięte w Stravie są fizycznie usuwane wraz z danymi zależnymi dopiero po pełnym, zweryfikowanym przebiegu. Priority: must-have
+  > Socrates: Rozważono ryzyko duplikatów, niejasnego wyniku i usunięcia danych po niepełnym skanowaniu. Każda aktualizacja jest uruchamiana przez użytkownika, jasno wskazuje wynik i nie powiela aktywności.
 
 ### Activity and chain tracking
 
@@ -171,6 +171,12 @@ ostatniego woskowania, aby użytkownik mógł oszacować termin kolejnego.
    zera; ponownie użyty zachowuje przebieg całkowity. Nowe aktywności są
    doliczane wyłącznie do aktualnie aktywnego łańcucha.
 4. **Zakres danych i synchronizacji:** pierwsze wdrożenie pobiera listę rowerów
-   oraz aktywności z identyfikatorem, dystansem i przypisanym rowerem. Pierwsza
-   synchronizacja pobiera całą dostępną historię, a kolejne ręczne
-   synchronizacje tylko nowe aktywności od ostatniej aktualizacji.
+  oraz aktywności z identyfikatorem, dystansem i przypisanym rowerem. Pierwsza
+  synchronizacja pobiera całą dostępną historię. Później użytkownik może
+  zażądać importu nowych wpisów widocznych w Stravie niezależnie od daty jazdy
+  albo naprawy całej historii, która odświeża zapisywane pola i przypisania
+  roweru.
+5. **Aktywności bez jednoznacznego roweru i usunięcia:** naprawa zachowuje
+  aktywność nadal obecną w Stravie, ale bez jednoznacznego roweru, i ukrywa ją
+  na zwykłej liście. Fizycznie usuwa aktywność usuniętą w Stravie wraz z danymi
+  zależnymi dopiero po pełnym, zweryfikowanym przebiegu.

@@ -73,8 +73,8 @@ przebieg łańcuchów bez polegania wyłącznie na odczuciach podczas jazdy.
   > Socrates: Rozważono argument, że aplikacja mogłaby działać tylko dla jednego użytkownika bez logowania. Pozostaje w MVP, ponieważ brak logowania utrudniłby ochronę danych użytkownika.
 - FR-002: Użytkownik może pobrać dane z zewnętrznego źródła aktywności. Priority: must-have
   > Socrates: Nie zidentyfikowano kontrargumentu, który uzasadniałby usunięcie wymagania. Pozostaje bez zmian.
-- FR-003: Użytkownik może ręcznie uruchomić aktualizację danych z zewnętrznego źródła aktywności. Priority: must-have
-  > Socrates: Rozważono ryzyko duplikatów i niejasnej informacji o wyniku aktualizacji. Wymaganie pozostaje, ale aktualizacja musi jasno wskazywać wynik i nie powielać aktywności.
+- FR-003: Użytkownik może ręcznie uruchomić jedną z dwóch aktualizacji danych ze Stravy: import nowo widocznych aktywności niezależnie od daty jazdy albo naprawę całej historii, która odświeża obecnie zapisywane pola i przypisania roweru. Aktywności nadal obecne w Stravie, ale bez jednoznacznego roweru, są zachowane i ukryte; aktywności usunięte w Stravie są fizycznie usuwane wraz z danymi zależnymi dopiero po pełnym, zweryfikowanym przebiegu. Priority: must-have
+  > Socrates: Rozważono ryzyko duplikatów, niejasnego wyniku i usunięcia danych po niepełnym skanowaniu. Każda aktualizacja jest uruchamiana przez użytkownika, jasno wskazuje wynik i nie powiela aktywności.
 
 ### Activity and chain tracking
 
