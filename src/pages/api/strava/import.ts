@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase";
 import { toActivityViews } from "@/lib/strava/activity-view.ts";
 import {
@@ -9,6 +10,7 @@ import {
 } from "@/lib/strava/import.ts";
 import { hasRequiredStravaScopes } from "@/lib/strava/security.ts";
 import { getStravaAccessToken } from "@/lib/strava/server";
+import type { StravaSyncDatabase } from "@/lib/strava/sync-database.ts";
 
 export const prerender = false;
 
@@ -45,22 +47,27 @@ export const POST: APIRoute = async (context) => {
   const user = context.locals.user;
   const supabase = createClient(context.request.headers, context.cookies);
   if (!user || !supabase) return failure("Sign in to import your Strava history.", 401);
+  const db = supabase as unknown as SupabaseClient<StravaSyncDatabase>;
 
-  const { data: connection, error: connectionError } = await supabase
+  const { data: connection, error: connectionError } = await db
     .from("strava_connections")
-    .select("scopes, initial_import_completed_at, initial_import_next_page")
+    .select("athlete_id, initial_import_athlete_id, scopes, initial_import_completed_at, initial_import_next_page")
     .eq("user_id", user.id)
     .maybeSingle();
   if (connectionError) return failure("Could not check the Strava connection.", 503);
-  if (connection?.initial_import_completed_at) {
+  if (!connection) return failure("Connect Strava and grant the required read permissions before importing.", 409);
+  if (connection.initial_import_completed_at) {
     return failure("The initial Strava history import is already complete.", 409);
   }
-  const startPage: unknown = connection?.initial_import_next_page;
+  if (connection.initial_import_athlete_id !== connection.athlete_id) {
+    return failure("The connected Strava athlete does not match this activity history.", 409);
+  }
+  const startPage: unknown = connection.initial_import_next_page;
   if (typeof startPage !== "number" || !Number.isSafeInteger(startPage) || startPage < 1) {
     return failure("The saved Strava import progress is invalid. Reconnect and try again.", 503);
   }
-  const scopes: unknown = connection?.scopes;
-  if (!connection || !isStringArray(scopes) || !hasRequiredStravaScopes(scopes.join(" "))) {
+  const scopes: unknown = connection.scopes;
+  if (!isStringArray(scopes) || !hasRequiredStravaScopes(scopes.join(" "))) {
     return failure("Connect Strava and grant the required read permissions before importing.", 409);
   }
 
@@ -100,7 +107,7 @@ export const POST: APIRoute = async (context) => {
             started_at: activity.startedAt,
           };
         });
-        const { data: existing, error: readError } = await supabase
+        const { data: existing, error: readError } = await db
           .from("activities")
           .select("strava_activity_id")
           .eq("user_id", user.id)
@@ -121,14 +128,14 @@ export const POST: APIRoute = async (context) => {
       },
     },
     fetch,
-    { startPage, maxPages: STRAVA_ACTIVITY_PAGES_PER_IMPORT },
+    { startPage, maxPages: STRAVA_ACTIVITY_PAGES_PER_IMPORT, expectedAthleteId: connection.athlete_id },
   );
 
   if (result.outcome === "partial" || result.outcome === "complete") {
-    const progressUpdate =
-      result.outcome === "complete"
-        ? { initial_import_next_page: result.nextPage, initial_import_completed_at: new Date().toISOString() }
-        : { initial_import_next_page: result.nextPage };
+    const progressUpdate: { initial_import_next_page: number; initial_import_completed_at?: string } = {
+      initial_import_next_page: result.nextPage,
+    };
+    if (result.outcome === "complete") progressUpdate.initial_import_completed_at = new Date().toISOString();
     const { data: savedProgress, error: progressError } = await supabase
       .from("strava_connections")
       .update(progressUpdate)

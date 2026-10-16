@@ -46,7 +46,7 @@ class MemoryNewActivitySyncStore implements NewActivitySyncStore {
   run: NewActivitySyncRun;
 
   constructor(runId = "sync-1") {
-    this.run = { id: runId, status: "running", nextPage: 1, insertedCount: 0, skippedCount: 0 };
+    this.run = { id: runId, athleteId: 11, status: "running", nextPage: 1, insertedCount: 0, skippedCount: 0 };
   }
 
   upsertBikes(bikes: StravaBike[]) {
@@ -64,9 +64,17 @@ class MemoryNewActivitySyncStore implements NewActivitySyncStore {
     );
   }
 
-  insertActivitiesOnly(activities: NewActivityInsert[]) {
+  applyPage(input: {
+    runId: string;
+    expectedPage: number;
+    nextPage: number;
+    activities: NewActivityInsert[];
+    skippedDelta: number;
+    status: "running" | "partial" | "completed";
+  }) {
+    if (this.run.id !== input.runId || this.run.nextPage !== input.expectedPage) return Promise.resolve(null);
     let inserted = 0;
-    for (const activity of activities) {
+    for (const activity of input.activities) {
       if (this.activities.has(activity.stravaActivityId)) continue;
       this.activities.set(activity.stravaActivityId, {
         stravaActivityId: activity.stravaActivityId,
@@ -78,23 +86,11 @@ class MemoryNewActivitySyncStore implements NewActivitySyncStore {
       });
       inserted += 1;
     }
-    return Promise.resolve(inserted);
-  }
-
-  advanceRun(input: {
-    runId: string;
-    expectedPage: number;
-    nextPage: number;
-    insertedDelta: number;
-    skippedDelta: number;
-    status: "running" | "partial" | "completed";
-  }) {
-    if (this.run.id !== input.runId || this.run.nextPage !== input.expectedPage) return Promise.resolve(null);
     this.run = {
       ...this.run,
       status: input.status,
       nextPage: input.nextPage,
-      insertedCount: this.run.insertedCount + input.insertedDelta,
+      insertedCount: this.run.insertedCount + inserted,
       skippedCount: this.run.skippedCount + input.skippedDelta,
     };
     return Promise.resolve(this.run);
@@ -119,6 +115,7 @@ class MemoryRepairActivitySyncStore implements RepairActivitySyncStore {
   constructor(runId = "repair-1") {
     this.run = {
       id: runId,
+      athleteId: 11,
       status: "running",
       nextPage: 1,
       insertedCount: 0,
@@ -165,30 +162,43 @@ class MemoryRepairActivitySyncStore implements RepairActivitySyncStore {
     return Promise.resolve({ inserted, updated });
   }
 
-  stageActivityIds(_runId: string, activityIds: number[]) {
-    for (const activityId of activityIds) {
-      this.stagedActivityIds.add(activityId);
-      this.stagedActivityHistory.add(activityId);
-    }
-    return Promise.resolve();
-  }
-
-  advanceRun(input: {
+  applyPage(input: {
     runId: string;
     expectedPage: number;
     nextPage: number;
-    insertedDelta: number;
-    updatedDelta: number;
+    activities: RepairActivityUpsert[];
+    stagedActivityIds: number[];
     skippedDelta: number;
     scanComplete: boolean;
     status: "running" | "partial";
   }) {
     if (this.run.id !== input.runId || this.run.nextPage !== input.expectedPage) return Promise.resolve(null);
+    let inserted = 0;
+    let updated = 0;
+    for (const activity of input.activities) {
+      const existing = this.activities.get(activity.stravaActivityId);
+      if (existing) {
+        updated += 1;
+        this.activities.set(activity.stravaActivityId, { ...existing, ...activity });
+      } else {
+        inserted += 1;
+        this.activities.set(activity.stravaActivityId, {
+          ...activity,
+          id: `activity-row-${activity.stravaActivityId}`,
+          userId: "user-a",
+          createdAt: "2020-01-01T00:00:00.000Z",
+        });
+      }
+    }
+    for (const activityId of input.stagedActivityIds) {
+      this.stagedActivityIds.add(activityId);
+      this.stagedActivityHistory.add(activityId);
+    }
     this.run = {
       ...this.run,
       nextPage: input.nextPage,
-      insertedCount: this.run.insertedCount + input.insertedDelta,
-      updatedCount: this.run.updatedCount + input.updatedDelta,
+      insertedCount: this.run.insertedCount + inserted,
+      updatedCount: this.run.updatedCount + updated,
       skippedCount: this.run.skippedCount + input.skippedDelta,
       scanComplete: input.scanComplete,
       status: input.status,
@@ -315,6 +325,21 @@ void test("imports every page, matches source bike IDs, and skips missing or unm
   assert.equal(store.activities.has(3), false);
   assert.equal(store.activities.has(STRAVA_ACTIVITY_PAGE_SIZE + 1), true);
   assert.equal(store.activities.size, STRAVA_ACTIVITY_PAGE_SIZE - 1);
+});
+
+void test("initial import refuses a provider athlete different from the expected history owner", async () => {
+  const store = new MemoryImportStore();
+  const fetcher: typeof fetch = (input) => {
+    const url = inputUrl(input);
+    if (url.pathname.endsWith("/athlete")) return Promise.resolve(responseFor({ id: 22, bikes: [] }));
+    return Promise.resolve(responseFor([activity(1)]));
+  };
+
+  const result = await importStravaHistory("fixture-token", store, fetcher, { expectedAthleteId: 11 });
+
+  assert.equal(result.outcome, "failed");
+  assert.equal(store.activities.size, 0);
+  assert.equal(store.bikes.size, 0);
 });
 
 void test("repair refreshes old provider fields and bike assignment while retaining unmatched rows hidden", async () => {
@@ -736,6 +761,46 @@ void test("discovers an old-dated activity once and leaves an existing activity 
   assert.equal(STRAVA_ACTIVITY_PAGES_PER_SYNC, 5);
 });
 
+void test("new sync refuses a provider athlete different from the expected history owner", async () => {
+  const store = new MemoryNewActivitySyncStore();
+  const fetcher: typeof fetch = (input) => {
+    const url = inputUrl(input);
+    if (url.pathname.endsWith("/athlete")) return Promise.resolve(responseFor({ id: 22, bikes: [] }));
+    return Promise.resolve(responseFor([activity(1)]));
+  };
+
+  const result = await syncNewStravaActivities("fixture-token", store.run, store, fetcher, 11);
+
+  assert.equal(result.outcome, "failed");
+  assert.equal(store.activities.size, 0);
+  assert.equal(store.run.nextPage, 1);
+});
+
+void test("repair refuses a provider athlete different from the expected history owner", async () => {
+  const store = new MemoryRepairActivitySyncStore();
+  store.activities.set(99, {
+    id: "row-99",
+    userId: "user-a",
+    createdAt: "2020-01-01T00:00:00.000Z",
+    stravaActivityId: 99,
+    name: "Must remain",
+    distanceMeters: 100,
+    startedAt: "2020-01-01T00:00:00Z",
+    bikeId: null,
+  });
+  const fetcher: typeof fetch = (input) => {
+    if (inputUrl(input).pathname.endsWith("/athlete")) return Promise.resolve(responseFor({ id: 22, bikes: [] }));
+    return Promise.resolve(new Response(null, { status: 404 }));
+  };
+
+  const result = await syncRepairStravaActivities("fixture-token", store.run, store, fetcher, 11);
+
+  assert.equal(result.outcome, "failed");
+  assert.equal(result.removed, 0);
+  assert.equal(store.activities.has(99), true);
+  assert.equal(store.run.scanComplete, false);
+});
+
 void test("bounds batches to five pages and continues after a short non-empty page through the empty page", async () => {
   const store = new MemoryNewActivitySyncStore();
   const fullPage = Array.from({ length: STRAVA_ACTIVITY_PAGE_SIZE }, (_, index) => activity(index + 1));
@@ -870,4 +935,76 @@ void test("counts ineligible unknown activities and imports one on a later eligi
   assert.equal(laterStore.activities.has(72), true);
   assert.equal(laterStore.activities.has(70), false);
   assert.equal(laterStore.activities.has(73), false);
+});
+
+void test("a stale new-activity page cannot mutate rows, counts, or the cursor", async () => {
+  const store = new MemoryNewActivitySyncStore();
+  const page = {
+    runId: store.run.id,
+    expectedPage: 1,
+    nextPage: 2,
+    activities: [
+      {
+        stravaActivityId: 501,
+        name: "First page",
+        distanceMeters: 1000,
+        startedAt: "2026-10-16T12:00:00Z",
+        bikeId: "bike-row-bike-1",
+      },
+    ],
+    skippedDelta: 1,
+    status: "running" as const,
+  };
+
+  const first = await store.applyPage(page);
+  const stale = await store.applyPage({
+    ...page,
+    activities: [{ ...page.activities[0], stravaActivityId: 502, name: "Stale page" }],
+    skippedDelta: 9,
+  });
+
+  assert.notEqual(first, null);
+  assert.equal(stale, null);
+  assert.deepEqual([...store.activities.keys()], [501]);
+  assert.equal(store.run.nextPage, 2);
+  assert.equal(store.run.insertedCount, 1);
+  assert.equal(store.run.skippedCount, 1);
+});
+
+void test("a stale repair page cannot mutate rows, staged IDs, counts, or the cursor", async () => {
+  const store = new MemoryRepairActivitySyncStore();
+  const page = {
+    runId: store.run.id,
+    expectedPage: 1,
+    nextPage: 2,
+    activities: [
+      {
+        stravaActivityId: 601,
+        name: "First page",
+        distanceMeters: 1000,
+        startedAt: "2026-10-16T12:00:00Z",
+        bikeId: null,
+      },
+    ],
+    stagedActivityIds: [601],
+    skippedDelta: 1,
+    scanComplete: false,
+    status: "running" as const,
+  };
+
+  const first = await store.applyPage(page);
+  const stale = await store.applyPage({
+    ...page,
+    activities: [{ ...page.activities[0], stravaActivityId: 602, name: "Stale page" }],
+    stagedActivityIds: [602],
+    skippedDelta: 9,
+  });
+
+  assert.notEqual(first, null);
+  assert.equal(stale, null);
+  assert.deepEqual([...store.activities.keys()], [601]);
+  assert.deepEqual([...store.stagedActivityIds], [601]);
+  assert.equal(store.run.nextPage, 2);
+  assert.equal(store.run.insertedCount, 1);
+  assert.equal(store.run.skippedCount, 1);
 });

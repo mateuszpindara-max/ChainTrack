@@ -206,7 +206,7 @@ export default function ActivityDashboard({
             <summary className="inline-flex min-h-11 cursor-pointer list-none items-center justify-center rounded-md bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200">
               Synchronize
             </summary>
-            <div className="absolute right-0 z-10 mt-2 grid min-w-56 gap-1 rounded-md border border-white/15 bg-slate-950 p-1 shadow-xl">
+            <div className="absolute right-0 z-10 mt-2 grid w-72 max-w-[calc(100vw-2.5rem)] gap-1 rounded-md border border-white/15 bg-slate-950 p-1 shadow-xl">
               <button
                 type="button"
                 onClick={(event) => {
@@ -229,13 +229,18 @@ export default function ActivityDashboard({
                   void synchronizeActivities("repair");
                 }}
                 disabled={loading || activeSyncRun?.mode === "new"}
-                className="min-h-10 rounded px-3 py-2 text-left text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-not-allowed disabled:opacity-50"
+                className="grid min-h-10 gap-1 rounded px-3 py-2 text-left text-sm font-medium whitespace-normal text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {loading && loadingAction === "repair"
-                  ? "Repairing..."
-                  : activeSyncRun?.mode === "repair"
-                    ? "Continue full-history repair"
-                    : "Repair full history"}
+                <span>
+                  {loading && loadingAction === "repair"
+                    ? "Repairing..."
+                    : activeSyncRun?.mode === "repair"
+                      ? "Continue full-history repair"
+                      : "Repair full history"}
+                </span>
+                <span className="text-xs leading-snug font-normal text-amber-200">
+                  Repair permanently removes local activities Strava confirms as deleted, including their linked data.
+                </span>
               </button>
             </div>
           </details>

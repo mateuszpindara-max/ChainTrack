@@ -74,6 +74,7 @@ export async function saveStravaConnection(
       refresh_token_ciphertext: await encryptToken(tokens.refreshToken, configuration.encryptionKey),
       token_expires_at: new Date(tokens.expiresAt * 1000).toISOString(),
       athlete_id: tokens.athleteId,
+      initial_import_athlete_id: tokens.athleteId,
       scopes: tokens.scopes,
       updated_at: new Date().toISOString(),
     },

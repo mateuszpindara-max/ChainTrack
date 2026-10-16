@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  canReconnectStravaAthlete,
   consumeOAuthState,
   consumeOAuthStateFromDatabase,
   createOAuthState,
@@ -84,6 +85,12 @@ void test("required scope validation rejects denied or incomplete grants", () =>
   assert.equal(hasRequiredStravaScopes("activity:read_all"), false);
   assert.equal(hasRequiredStravaScopes("profile:read_all"), false);
   assert.equal(hasRequiredStravaScopes(""), false);
+});
+
+void test("Strava reconnect preserves the bound athlete and refuses account switching", () => {
+  assert.equal(canReconnectStravaAthlete(null, 11), true);
+  assert.equal(canReconnectStravaAthlete(11, 11), true);
+  assert.equal(canReconnectStravaAthlete(11, 22), false);
 });
 
 void test("OAuth state is one-use and bound to the initiating user and expiry", async () => {

@@ -35,6 +35,7 @@ export interface ImportResult extends ActivityUpsertCounts {
 
 export interface NewActivitySyncRun {
   id: string;
+  athleteId: number | null;
   status: "running" | "partial" | "completed";
   nextPage: number;
   insertedCount: number;
@@ -53,12 +54,11 @@ export interface NewActivitySyncStore {
   upsertBikes(bikes: StravaBike[]): Promise<void>;
   getExistingActivityIds(activityIds: number[]): Promise<Set<number>>;
   getBikeIds(gearIds: string[]): Promise<Map<string, string>>;
-  insertActivitiesOnly(activities: NewActivityInsert[]): Promise<number>;
-  advanceRun(input: {
+  applyPage(input: {
     runId: string;
     expectedPage: number;
     nextPage: number;
-    insertedDelta: number;
+    activities: NewActivityInsert[];
     skippedDelta: number;
     status: "running" | "partial" | "completed";
   }): Promise<NewActivitySyncRun | null>;
@@ -76,6 +76,7 @@ export interface NewActivitySyncResult {
 
 export interface RepairActivitySyncRun {
   id: string;
+  athleteId: number | null;
   status: "running" | "partial" | "completed";
   nextPage: number;
   insertedCount: number;
@@ -98,13 +99,12 @@ export interface RepairActivitySyncStore {
   upsertBikes(bikes: StravaBike[]): Promise<void>;
   getBikeIds(gearIds: string[]): Promise<Map<string, string>>;
   upsertActivities(activities: RepairActivityUpsert[]): Promise<ActivityUpsertCounts>;
-  stageActivityIds(runId: string, activityIds: number[]): Promise<void>;
-  advanceRun(input: {
+  applyPage(input: {
     runId: string;
     expectedPage: number;
     nextPage: number;
-    insertedDelta: number;
-    updatedDelta: number;
+    activities: RepairActivityUpsert[];
+    stagedActivityIds: number[];
     skippedDelta: number;
     scanComplete: boolean;
     status: "running" | "partial";
@@ -185,6 +185,12 @@ function normalizeActivity(value: unknown): StravaActivityResponse {
   return value as unknown as StravaActivityResponse;
 }
 
+function assertAthleteIdentity(value: unknown, expectedAthleteId: number): void {
+  if (!isRecord(value) || value.id !== expectedAthleteId) {
+    throw new Error("The connected Strava athlete does not match the saved activity history");
+  }
+}
+
 async function fetchJson(url: URL, accessToken: string, fetcher: typeof fetch): Promise<unknown> {
   const response = await fetcher(url, { headers: { Authorization: `Bearer ${accessToken}` } });
   if (!response.ok) throw new Error("Strava request failed");
@@ -204,7 +210,7 @@ export async function importStravaHistory(
   accessToken: string,
   store: ImportStore,
   fetcher: typeof fetch = fetch,
-  options: { startPage?: number; maxPages?: number } = {},
+  options: { startPage?: number; maxPages?: number; expectedAthleteId?: number } = {},
 ): Promise<ImportResult> {
   const counts: ActivityUpsertCounts = { inserted: 0, updated: 0 };
   const startPage = options.startPage ?? 1;
@@ -220,6 +226,7 @@ export async function importStravaHistory(
     const athleteUrl = new URL("https://www.strava.com/api/v3/athlete");
     const athlete = await fetchJson(athleteUrl, accessToken, fetcher);
     if (!isRecord(athlete)) throw new Error("Invalid Strava athlete response");
+    if (options.expectedAthleteId !== undefined) assertAthleteIdentity(athlete, options.expectedAthleteId);
 
     const { bikes, ambiguousGearIds } = normalizeBikes(athlete.bikes ?? []);
     const bikesById = new Map(bikes.map((bike) => [bike.id, bike]));
@@ -291,6 +298,7 @@ export async function syncNewStravaActivities(
   run: NewActivitySyncRun,
   store: NewActivitySyncStore,
   fetcher: typeof fetch = fetch,
+  expectedAthleteId?: number,
 ): Promise<NewActivitySyncResult> {
   let currentRun = run;
   let completedPages = 0;
@@ -299,6 +307,7 @@ export async function syncNewStravaActivities(
     const athleteUrl = new URL("https://www.strava.com/api/v3/athlete");
     const athlete = await fetchJson(athleteUrl, accessToken, fetcher);
     if (!isRecord(athlete)) throw new Error("Invalid Strava athlete response");
+    if (expectedAthleteId !== undefined) assertAthleteIdentity(athlete, expectedAthleteId);
 
     const { bikes, ambiguousGearIds } = normalizeBikes(athlete.bikes ?? []);
     const providerGearIds = new Set(bikes.map((bike) => bike.id));
@@ -346,15 +355,14 @@ export async function syncNewStravaActivities(
       }
 
       const skippedDelta = unknownActivities.length - insertRows.length;
-      const insertedDelta = insertRows.length > 0 ? await store.insertActivitiesOnly(insertRows) : 0;
       const terminal = response.length === 0;
       const lastPageInBatch = pageOffset === STRAVA_ACTIVITY_PAGES_PER_SYNC - 1;
       const nextRunStatus = terminal ? "completed" : lastPageInBatch ? "partial" : "running";
-      const advancedRun = await store.advanceRun({
+      const advancedRun = await store.applyPage({
         runId: currentRun.id,
         expectedPage: pageNumber,
         nextPage: pageNumber + 1,
-        insertedDelta,
+        activities: insertRows,
         skippedDelta,
         status: nextRunStatus,
       });
@@ -446,6 +454,7 @@ export async function syncRepairStravaActivities(
   run: RepairActivitySyncRun,
   store: RepairActivitySyncStore,
   fetcher: typeof fetch = fetch,
+  expectedAthleteId?: number,
 ): Promise<RepairActivitySyncResult> {
   let currentRun = run;
   let completedPages = 0;
@@ -453,6 +462,7 @@ export async function syncRepairStravaActivities(
   try {
     const athlete = await fetchRepairJson(new URL("https://www.strava.com/api/v3/athlete"), accessToken, fetcher);
     if (!isRecord(athlete)) throw new Error("Invalid Strava athlete response");
+    if (expectedAthleteId !== undefined) assertAthleteIdentity(athlete, expectedAthleteId);
     const { bikes, ambiguousGearIds } = normalizeBikes(athlete.bikes);
     await store.upsertBikes(bikes);
 
@@ -479,18 +489,16 @@ export async function syncRepairStravaActivities(
         ];
         const bikeIds = await store.getBikeIds(gearIds);
         const upserts = [...activities.values()].map((activity) => toRepairUpsert(activity, bikeIds, ambiguousGearIds));
-        const counts = await store.upsertActivities(upserts);
         const skippedDelta = upserts.filter((activity) => activity.bikeId === null).length;
-        await store.stageActivityIds(currentRun.id, [...activities.keys()]);
 
         const terminal = response.length === 0;
         const lastPageInBatch = pageOffset === STRAVA_ACTIVITY_PAGES_PER_SYNC - 1;
-        const advancedRun = await store.advanceRun({
+        const advancedRun = await store.applyPage({
           runId: currentRun.id,
           expectedPage: pageNumber,
           nextPage: pageNumber + 1,
-          insertedDelta: counts.inserted,
-          updatedDelta: counts.updated,
+          activities: upserts,
+          stagedActivityIds: [...activities.keys()],
           skippedDelta,
           scanComplete: terminal,
           status: terminal || !lastPageInBatch ? "running" : "partial",

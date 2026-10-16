@@ -1,6 +1,6 @@
 begin;
 
-select plan(52);
+select plan(65);
 
 insert into auth.users (id, aud, role, email, encrypted_password, email_confirmed_at)
 values
@@ -25,16 +25,16 @@ values
   (repeat('b', 64), '20000000-0000-0000-0000-000000000002', now() + interval '5 minutes');
 
 insert into public.strava_connections (
-  user_id, access_token_ciphertext, refresh_token_ciphertext, token_expires_at, athlete_id, scopes
+  user_id, access_token_ciphertext, refresh_token_ciphertext, token_expires_at, athlete_id, initial_import_athlete_id, scopes
 )
 values
-  ('10000000-0000-0000-0000-000000000001', 'v1.AAAAAAAAAAAAAAAA.AAAAAAAAAAAAAAAAAAAAAAAA', 'v1.AAAAAAAAAAAAAAAA.AAAAAAAAAAAAAAAAAAAAAAAA', now() + interval '1 hour', 11, array['activity:read_all']),
-  ('20000000-0000-0000-0000-000000000002', 'v1.AAAAAAAAAAAAAAAA.AAAAAAAAAAAAAAAAAAAAAAAA', 'v1.AAAAAAAAAAAAAAAA.AAAAAAAAAAAAAAAAAAAAAAAA', now() + interval '1 hour', 22, array['activity:read_all']);
+  ('10000000-0000-0000-0000-000000000001', 'v1.AAAAAAAAAAAAAAAA.AAAAAAAAAAAAAAAAAAAAAAAA', 'v1.AAAAAAAAAAAAAAAA.AAAAAAAAAAAAAAAAAAAAAAAA', now() + interval '1 hour', 11, 11, array['activity:read_all']),
+  ('20000000-0000-0000-0000-000000000002', 'v1.AAAAAAAAAAAAAAAA.AAAAAAAAAAAAAAAAAAAAAAAA', 'v1.AAAAAAAAAAAAAAAA.AAAAAAAAAAAAAAAAAAAAAAAA', now() + interval '1 hour', 22, 22, array['activity:read_all']);
 
-insert into public.strava_sync_runs (id, user_id, mode, status)
+insert into public.strava_sync_runs (id, user_id, athlete_id, mode, status)
 values
-  ('10000000-0000-0000-0000-000000000031', '10000000-0000-0000-0000-000000000001', 'repair', 'running'),
-  ('20000000-0000-0000-0000-000000000032', '20000000-0000-0000-0000-000000000002', 'repair', 'running');
+  ('10000000-0000-0000-0000-000000000031', '10000000-0000-0000-0000-000000000001', 11, 'repair', 'running'),
+  ('20000000-0000-0000-0000-000000000032', '20000000-0000-0000-0000-000000000002', 22, 'repair', 'running');
 
 insert into public.strava_sync_activity_ids (user_id, sync_run_id, strava_activity_id)
 values
@@ -59,8 +59,32 @@ select is((select count(*)::integer from public.activities), 3, 'user reads only
 select is((select count(*)::integer from public.strava_oauth_states), 1, 'user reads only their own OAuth states');
 select is((select count(*)::integer from public.strava_connections), 1, 'user reads only their own Strava connection');
 select is((select count(*)::integer from public.strava_sync_runs), 1, 'user reads only their own sync runs');
+select is((select athlete_id::integer from public.strava_sync_runs where user_id = auth.uid()), 11, 'sync run stores its source athlete identity');
 select is((select count(*)::integer from public.strava_sync_activity_ids), 1, 'user reads only their own staged activity IDs');
 select is((select count(*)::integer from public.strava_sync_deleted_activity_ids), 0, 'user reads only their own verified deletion candidates');
+select lives_ok($$select public.apply_strava_sync_page(
+  '10000000-0000-0000-0000-000000000031', 1, 2,
+  '[{"bike_id":"10000000-0000-0000-0000-000000000011","strava_activity_id":909,"name":"Atomic page","distance_meters":900,"started_at":"2026-10-16T12:00:00Z"}]'::jsonb,
+  array[909]::bigint[], 1, false, 'running'
+)$$, 'first repair page atomically stores activity, staging, and progress');
+select ok(public.apply_strava_sync_page(
+  '10000000-0000-0000-0000-000000000031', 1, 2,
+  '[{"bike_id":"10000000-0000-0000-0000-000000000011","strava_activity_id":910,"name":"Stale page","distance_meters":1000,"started_at":"2026-10-16T12:00:00Z"}]'::jsonb,
+  array[910]::bigint[], 9, false, 'running'
+) is null, 'replayed repair page is rejected as stale');
+select is((select next_page from public.strava_sync_runs where id = '10000000-0000-0000-0000-000000000031'), 2, 'stale page does not change the saved cursor');
+select is((select inserted_count from public.strava_sync_runs where id = '10000000-0000-0000-0000-000000000031'), 1, 'stale page does not increment inserted count');
+select is((select updated_count from public.strava_sync_runs where id = '10000000-0000-0000-0000-000000000031'), 0, 'stale page does not increment updated count');
+select is((select skipped_count from public.strava_sync_runs where id = '10000000-0000-0000-0000-000000000031'), 1, 'stale page does not increment skipped count');
+select is((select count(*)::integer from public.activities where strava_activity_id = 909), 1, 'accepted page inserts its activity');
+select is((select count(*)::integer from public.activities where strava_activity_id = 910), 0, 'stale page inserts no activity');
+select is((select count(*)::integer from public.strava_sync_activity_ids where sync_run_id = '10000000-0000-0000-0000-000000000031' and strava_activity_id = 909), 1, 'accepted page stages its activity ID');
+select is((select count(*)::integer from public.strava_sync_activity_ids where sync_run_id = '10000000-0000-0000-0000-000000000031' and strava_activity_id = 910), 0, 'stale page stages no activity ID');
+select ok(public.apply_strava_sync_page(
+  '10000000-0000-0000-0000-000000000031', 2, 3,
+  null, array[]::bigint[], 0, false, 'running'
+) is null, 'null page payload is rejected without advancing the run');
+select is((select next_page from public.strava_sync_runs where id = '10000000-0000-0000-0000-000000000031'), 2, 'null page payload leaves the cursor unchanged');
 select lives_ok($$insert into public.bikes (user_id, strava_gear_id, name) values (auth.uid(), 'gear-own-write', 'Owned bike')$$, 'user can insert their own bike');
 select lives_ok($$insert into public.activities (user_id, bike_id, strava_activity_id, name, distance_meters, started_at) values (auth.uid(), '10000000-0000-0000-0000-000000000011', 505, 'Owned ride', 500, now())$$, 'user can insert their own activity');
 select throws_ok($$insert into public.strava_oauth_states (state_hash, user_id, expires_at) values (repeat('e', 64), auth.uid(), now() + interval '5 minutes')$$, '23505', null, 'user can have only one pending OAuth state');
@@ -79,7 +103,7 @@ select public.delete_strava_activity(202);
 select is((select count(*)::integer from public.activities where strava_activity_id = 101), 0, 'user can delete their confirmed provider activity');
 select is((select count(*)::integer from public.strava_rls_test_activity_dependents), 0, 'activity deletion atomically cascades to dependent records');
 select lives_ok($$update public.strava_sync_runs set status = 'partial' where id = '10000000-0000-0000-0000-000000000031'$$, 'user can pause a repair run with a partial result');
-select is((select count(*)::integer from public.strava_sync_activity_ids), 2, 'partial repair retains staged activity IDs');
+select is((select count(*)::integer from public.strava_sync_activity_ids), 3, 'partial repair retains staged activity IDs');
 select throws_ok($$insert into public.strava_sync_runs (user_id, mode) values (auth.uid(), 'repair')$$, '23505', null, 'partial run remains the user active run');
 select lives_ok($$insert into public.strava_sync_activity_ids (user_id, sync_run_id, strava_activity_id) values (auth.uid(), '10000000-0000-0000-0000-000000000031', 906)$$, 'user can resume staging IDs for a partial repair run');
 set local role postgres;

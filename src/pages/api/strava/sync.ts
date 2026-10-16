@@ -9,6 +9,7 @@ import {
   type NewActivitySyncStore,
   type RepairActivitySyncRun,
   type RepairActivitySyncStore,
+  type RepairActivityUpsert,
   type StravaBike,
 } from "@/lib/strava/import.ts";
 import { hasRequiredStravaScopes } from "@/lib/strava/security.ts";
@@ -19,11 +20,12 @@ import { isStravaSyncMode } from "@/lib/strava/sync-contract.ts";
 export const prerender = false;
 
 const RUN_COLUMNS =
-  "id, mode, status, next_page, inserted_count, updated_count, skipped_count, removed_count, scan_complete, verification_step";
+  "id, athlete_id, mode, status, next_page, inserted_count, updated_count, skipped_count, removed_count, scan_complete, verification_step";
 const DATABASE_PAGE_SIZE = 500;
 
 interface SyncRunRow {
   id: string;
+  athlete_id: number | null;
   mode: string;
   status: string;
   next_page: number;
@@ -67,6 +69,7 @@ function toNewRun(value: SyncRunRow): NewActivitySyncRun {
   }
   return {
     id: value.id,
+    athleteId: value.athlete_id,
     status: value.status,
     nextPage: value.next_page,
     insertedCount: value.inserted_count,
@@ -96,6 +99,7 @@ function toRepairRun(value: SyncRunRow): RepairActivitySyncRun {
   }
   return {
     id: value.id,
+    athleteId: value.athlete_id,
     status: value.status,
     nextPage: value.next_page,
     insertedCount: value.inserted_count,
@@ -131,12 +135,15 @@ export const POST: APIRoute = async (context) => {
 
   const { data: connection, error: connectionError } = await db
     .from("strava_connections")
-    .select("scopes, initial_import_completed_at")
+    .select("athlete_id, initial_import_athlete_id, scopes, initial_import_completed_at")
     .eq("user_id", user.id)
     .maybeSingle();
   if (connectionError) return failure("Could not check the Strava connection.", 503, mode);
   if (!connection?.initial_import_completed_at) {
     return failure("Complete the initial Strava history import before synchronizing.", 409, mode);
+  }
+  if (connection.initial_import_athlete_id !== connection.athlete_id) {
+    return failure("The connected Strava athlete does not match this activity history.", 409, mode);
   }
   const scopes: unknown = connection.scopes;
   if (
@@ -165,6 +172,9 @@ export const POST: APIRoute = async (context) => {
   let run: NewActivitySyncRun | null = null;
   let repairRun: RepairActivitySyncRun | null = null;
   if (activeRunRow) {
+    if (activeRunRow.athlete_id !== connection.athlete_id) {
+      return failure("This sync run belongs to a different Strava athlete. It cannot be resumed.", 409, mode);
+    }
     if (activeRunRow.mode !== mode) {
       return failure("A different Strava synchronization mode is already active. Continue that run first.", 409, mode);
     }
@@ -187,7 +197,7 @@ export const POST: APIRoute = async (context) => {
     }
     const { data: createdRun, error: createRunError } = await db
       .from("strava_sync_runs")
-      .insert({ user_id: user.id, mode, status: "running", next_page: 1 })
+      .insert({ user_id: user.id, athlete_id: connection.athlete_id, mode, status: "running", next_page: 1 })
       .select(RUN_COLUMNS)
       .single();
     if (createRunError) {
@@ -220,6 +230,31 @@ export const POST: APIRoute = async (context) => {
       if (error) throw new Error("Could not match Strava bikes");
       return new Map(data.map((bike) => [bike.strava_gear_id, bike.id]));
     },
+    async upsertActivities(activities: RepairActivityUpsert[]) {
+      if (activities.length === 0) return { inserted: 0, updated: 0 };
+      const rows = activities.map((activity) => ({
+        user_id: user.id,
+        bike_id: activity.bikeId,
+        strava_activity_id: activity.stravaActivityId,
+        name: activity.name,
+        distance_meters: activity.distanceMeters,
+        started_at: activity.startedAt,
+      }));
+      const { data: existing, error: readError } = await db
+        .from("activities")
+        .select("strava_activity_id")
+        .eq("user_id", user.id)
+        .in(
+          "strava_activity_id",
+          rows.map((row) => row.strava_activity_id),
+        );
+      if (readError) throw new Error("Could not check existing Strava activities");
+      const existingIds = new Set(existing.map((row) => row.strava_activity_id));
+      const { error } = await db.from("activities").upsert(rows, { onConflict: "user_id,strava_activity_id" });
+      if (error) throw new Error("Could not reconcile Strava activities");
+      const updated = rows.filter((row) => existingIds.has(row.strava_activity_id)).length;
+      return { inserted: rows.length - updated, updated };
+    },
   };
 
   let result:
@@ -239,106 +274,52 @@ export const POST: APIRoute = async (context) => {
         if (error) throw new Error("Could not check existing Strava activities");
         return new Set(data.map((row) => row.strava_activity_id));
       },
-      async insertActivitiesOnly(activities) {
-        if (activities.length === 0) return 0;
-        const { data, error } = await db
-          .from("activities")
-          .upsert(
-            activities.map((activity) => ({
-              user_id: user.id,
-              bike_id: activity.bikeId,
-              strava_activity_id: activity.stravaActivityId,
-              name: activity.name,
-              distance_meters: activity.distanceMeters,
-              started_at: activity.startedAt,
-            })),
-            { onConflict: "user_id,strava_activity_id", ignoreDuplicates: true },
-          )
-          .select("strava_activity_id");
-        if (error) throw new Error("Could not save new Strava activities");
-        return data.length;
-      },
-      async advanceRun(input) {
-        const { data, error } = await db
-          .from("strava_sync_runs")
-          .update({
-            next_page: input.nextPage,
-            inserted_count: savedRun.insertedCount + input.insertedDelta,
-            skipped_count: savedRun.skippedCount + input.skippedDelta,
-            status: input.status,
-          })
-          .eq("id", input.runId)
-          .eq("user_id", user.id)
-          .eq("next_page", input.expectedPage)
-          .in("status", ["running", "partial"])
-          .select(RUN_COLUMNS)
-          .maybeSingle();
+      async applyPage(input) {
+        const { data, error } = await db.rpc("apply_strava_sync_page", {
+          p_run_id: input.runId,
+          p_expected_page: input.expectedPage,
+          p_next_page: input.nextPage,
+          p_activities: input.activities.map((activity) => ({
+            bike_id: activity.bikeId,
+            strava_activity_id: activity.stravaActivityId,
+            name: activity.name,
+            distance_meters: activity.distanceMeters,
+            started_at: activity.startedAt,
+          })),
+          p_staged_activity_ids: [],
+          p_skipped_delta: input.skippedDelta,
+          p_scan_complete: false,
+          p_next_status: input.status,
+        });
         if (error) throw new Error("Could not save Strava synchronization progress");
         if (!data) return null;
         savedRun = toNewRun(data);
         return savedRun;
       },
     };
-    result = await syncNewStravaActivities(accessToken, run, store);
+    result = await syncNewStravaActivities(accessToken, run, store, fetch, connection.athlete_id);
   } else {
     if (!repairRun) return failure("The saved Strava repair state is invalid.", 503, mode);
     let savedRun = repairRun;
     const store: RepairActivitySyncStore = {
       ...commonStore,
-      async upsertActivities(activities) {
-        if (activities.length === 0) return { inserted: 0, updated: 0 };
-        const rows = activities.map((activity) => ({
-          user_id: user.id,
-          bike_id: activity.bikeId,
-          strava_activity_id: activity.stravaActivityId,
-          name: activity.name,
-          distance_meters: activity.distanceMeters,
-          started_at: activity.startedAt,
-        }));
-        const { data: existing, error: readError } = await db
-          .from("activities")
-          .select("strava_activity_id")
-          .eq("user_id", user.id)
-          .in(
-            "strava_activity_id",
-            rows.map((row) => row.strava_activity_id),
-          );
-        if (readError) throw new Error("Could not check existing Strava activities");
-        const existingIds = new Set(existing.map((row) => row.strava_activity_id));
-        const { error } = await db.from("activities").upsert(rows, { onConflict: "user_id,strava_activity_id" });
-        if (error) throw new Error("Could not reconcile Strava activities");
-        const updated = rows.filter((row) => existingIds.has(row.strava_activity_id)).length;
-        return { inserted: rows.length - updated, updated };
-      },
-      async stageActivityIds(runId, activityIds) {
-        if (activityIds.length === 0) return;
-        const { error } = await db.from("strava_sync_activity_ids").upsert(
-          activityIds.map((activityId) => ({
-            user_id: user.id,
-            sync_run_id: runId,
-            strava_activity_id: activityId,
+      async applyPage(input) {
+        const { data, error } = await db.rpc("apply_strava_sync_page", {
+          p_run_id: input.runId,
+          p_expected_page: input.expectedPage,
+          p_next_page: input.nextPage,
+          p_activities: input.activities.map((activity) => ({
+            bike_id: activity.bikeId,
+            strava_activity_id: activity.stravaActivityId,
+            name: activity.name,
+            distance_meters: activity.distanceMeters,
+            started_at: activity.startedAt,
           })),
-          { onConflict: "user_id,sync_run_id,strava_activity_id", ignoreDuplicates: true },
-        );
-        if (error) throw new Error("Could not stage scanned Strava activities");
-      },
-      async advanceRun(input) {
-        const { data, error } = await db
-          .from("strava_sync_runs")
-          .update({
-            next_page: input.nextPage,
-            inserted_count: savedRun.insertedCount + input.insertedDelta,
-            updated_count: savedRun.updatedCount + input.updatedDelta,
-            skipped_count: savedRun.skippedCount + input.skippedDelta,
-            scan_complete: input.scanComplete,
-            status: input.status,
-          })
-          .eq("id", input.runId)
-          .eq("user_id", user.id)
-          .eq("next_page", input.expectedPage)
-          .in("status", ["running", "partial"])
-          .select(RUN_COLUMNS)
-          .maybeSingle();
+          p_staged_activity_ids: input.stagedActivityIds,
+          p_skipped_delta: input.skippedDelta,
+          p_scan_complete: input.scanComplete,
+          p_next_status: input.status,
+        });
         if (error) throw new Error("Could not save Strava repair progress");
         if (!data) return null;
         savedRun = toRepairRun(data);
@@ -389,7 +370,17 @@ export const POST: APIRoute = async (context) => {
         }
       },
       async recordVerification(input) {
-        await this.stageActivityIds(input.runId, input.seenActivityIds);
+        if (input.seenActivityIds.length > 0) {
+          const { error: seenError } = await db.from("strava_sync_activity_ids").upsert(
+            input.seenActivityIds.map((activityId) => ({
+              user_id: user.id,
+              sync_run_id: input.runId,
+              strava_activity_id: activityId,
+            })),
+            { onConflict: "user_id,sync_run_id,strava_activity_id", ignoreDuplicates: true },
+          );
+          if (seenError) throw new Error("Could not stage rechecked Strava activities");
+        }
         if (input.verifiedMissingActivityIds.length > 0) {
           const { error: stageError } = await db.from("strava_sync_deleted_activity_ids").upsert(
             input.verifiedMissingActivityIds.map((activityId) => ({
@@ -447,7 +438,7 @@ export const POST: APIRoute = async (context) => {
         return data;
       },
     };
-    result = await syncRepairStravaActivities(accessToken, repairRun, store);
+    result = await syncRepairStravaActivities(accessToken, repairRun, store, fetch, connection.athlete_id);
   }
 
   const responseStatus = (outcome: string, message?: string) =>

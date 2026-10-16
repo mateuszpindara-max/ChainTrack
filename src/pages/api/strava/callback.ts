@@ -1,6 +1,11 @@
 import type { APIRoute } from "astro";
 import { createClient } from "@/lib/supabase";
-import { consumeOAuthState, consumeOAuthStateFromDatabase, hasRequiredStravaScopes } from "@/lib/strava/security.ts";
+import {
+  canReconnectStravaAthlete,
+  consumeOAuthState,
+  consumeOAuthStateFromDatabase,
+  hasRequiredStravaScopes,
+} from "@/lib/strava/security.ts";
 import { getStravaConfiguration, saveStravaConnection } from "@/lib/strava/server";
 
 export const prerender = false;
@@ -69,6 +74,21 @@ export const GET: APIRoute = async (context) => {
     !Number.isSafeInteger(tokens.athlete.id)
   ) {
     return new Response("Strava returned an invalid authorization response", { status: 502 });
+  }
+
+  const { data: existingConnection, error: existingConnectionError } = await supabase
+    .from("strava_connections")
+    .select("athlete_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (existingConnectionError) return new Response("Could not verify the existing Strava connection", { status: 503 });
+  const existingAthleteId: number | null =
+    typeof existingConnection?.athlete_id === "number" ? existingConnection.athlete_id : null;
+  if (!canReconnectStravaAthlete(existingAthleteId, tokens.athlete.id)) {
+    return new Response(
+      "This Strava connection is bound to a different athlete. Reset or reimport its history before switching accounts.",
+      { status: 409 },
+    );
   }
 
   try {

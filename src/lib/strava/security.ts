@@ -98,6 +98,10 @@ export function hasRequiredStravaScopes(scopeValue: string): boolean {
   return REQUIRED_STRAVA_SCOPES.every((scope) => granted.has(scope));
 }
 
+export function canReconnectStravaAthlete(currentAthleteId: number | null, requestedAthleteId: number): boolean {
+  return currentAthleteId === null || currentAthleteId === requestedAthleteId;
+}
+
 export function createOAuthState(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   return encodeBase64Url(bytes);
