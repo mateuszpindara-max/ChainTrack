@@ -3,7 +3,7 @@ project: ChainTrack
 version: 1
 status: draft
 created: 2026-09-28
-updated: 2026-10-16
+updated: 2026-10-18
 prd_version: 2
 main_goal: speed
 top_blocker: external
@@ -42,7 +42,7 @@ Właściciel wielu rowerów ma trudność z pamiętaniem, ile kilometrów przeje
 | ID   | Change ID                     | Outcome (user can …)                                            | Prerequisites | PRD refs                              | Status   |
 | ---- | ----------------------------- | --------------------------------------------------------------- | ------------- | ------------------------------------- | -------- |
 | S-01 | import-bike-linked-activities | importować i przeglądać nazwę, dystans, datę i rower aktywności | —             | FR-001, FR-002                        | done |
-| S-02 | refresh-activities-safely     | ręcznie importować nowe wpisy niezależnie od daty albo naprawiać całą historię; ukrywać niedopasowane i usuwać skasowane wraz z danymi zależnymi po pełnej weryfikacji, bez duplikatów | S-01          | FR-003                                | in-progress |
+| S-02 | refresh-activities-safely     | ręcznie importować nowe wpisy niezależnie od daty albo naprawiać całą historię; ukrywać niedopasowane i usuwać skasowane wraz z danymi zależnymi po pełnej weryfikacji, bez duplikatów | S-01          | FR-003                                | done |
 | S-03 | create-chain                  | tworzyć własny łańcuch                                          | —             | FR-004                                | ready    |
 | S-04 | assign-chain-and-mark-waxing  | przypisać łańcuch do aktywności i oznaczyć woskowanie           | S-01, S-03    | US-01, FR-005, FR-006, Access Control | proposed |
 | S-05 | filter-activities             | filtrować aktywności po rowerze i łańcuchu                      | S-01, S-04    | FR-007, FR-008                        | proposed |
@@ -96,7 +96,7 @@ Brak osobnych fundamentów. Uwierzytelnianie i wdrożenie są już obecne; minim
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Niejasny wynik błędnej aktualizacji lub powielone wpisy podważą zaufanie do danych.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-03: Tworzenie łańcucha
 
@@ -160,3 +160,4 @@ Brak pytań przekrojowych. Potwierdzenie dostępu do Strava blokujące `S-01` zn
 ## Done
 
 - **S-01: Użytkownik widzi aktywności przypisane do rowerów.** — Archived 2026-10-16 → `context/archive/2026-09-28-import-bike-linked-activities/`. Lesson: —.
+- **S-02: Użytkownik może ręcznie importować aktywności nowo widoczne w Stravie niezależnie od daty albo naprawić całą historię, odświeżając obecnie zapisywane pola i przypisania roweru. Naprawa zachowuje, ale ukrywa aktywności nadal obecne bez jednoznacznego roweru; aktywności skasowane w Stravie usuwa fizycznie wraz z danymi zależnymi dopiero po pełnym, zweryfikowanym przebiegu, bez duplikatów.** — Archived 2026-10-18 → `context/archive/2026-10-16-refresh-activities-safely/`. Lesson: —.
