@@ -129,23 +129,23 @@ No database or data migration is required.
 
 #### Automated
 
-- [x] 1.1 Focused `npx eslint` and `npx tsc --noEmit` runs establish whether the current diagnostics reproduce in the repository's CLI checks.
+- [x] 1.1 Focused `npx eslint` and `npx tsc --noEmit` runs establish whether the current diagnostics reproduce in the repository's CLI checks. — 614f2e4
 
 #### Manual
 
-- [x] 1.2 Identify the editor diagnostic provider and attribute the unresolved types to a specific source or tooling cause before correction.
-- [x] 1.3 Confirm the verified correction removes the reported unsafe-type findings without disabling or weakening type-aware ESLint rules.
-- [x] 1.4 Review the focused diff to confirm it contains only the correction for the diagnosed source and no Strava behavior changes.
+- [x] 1.2 Identify the editor diagnostic provider and attribute the unresolved types to a specific source or tooling cause before correction. — 614f2e4
+- [x] 1.3 Confirm the verified correction removes the reported unsafe-type findings without disabling or weakening type-aware ESLint rules. — 614f2e4
+- [x] 1.4 Review the focused diff to confirm it contains only the correction for the diagnosed source and no Strava behavior changes. — 614f2e4
 
 ### Phase 2: Verify Workspace and Repository Checks
 
 #### Automated
 
-- [ ] 2.1 `npm run lint` passes.
-- [ ] 2.2 `npx tsc --noEmit` passes.
-- [ ] 2.3 `npm run check` passes.
-- [ ] 2.4 `npm test` passes all existing Strava tests.
+- [x] 2.1 `npm run lint` passes.
+- [x] 2.2 `npx tsc --noEmit` passes.
+- [x] 2.3 `npm run check` passes.
+- [x] 2.4 `npm test` passes all existing Strava tests.
 
 #### Manual
 
-- [ ] 2.5 After refreshing the relevant editor diagnostic provider if needed, confirm a fresh workspace diagnostic snapshot has no remaining instances of the current unsafe-type findings.
+- [x] 2.5 After refreshing the relevant editor diagnostic provider if needed, confirm a fresh workspace diagnostic snapshot has no remaining instances of the current unsafe-type findings.
