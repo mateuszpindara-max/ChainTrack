@@ -295,17 +295,17 @@ New table only; no existing data is changed. S-04 must reference `chains (user_i
 
 #### Automated
 
-- [x] 3.1 Lint passes: `npm run lint`
-- [x] 3.2 Type check passes: `npm run check`
-- [x] 3.3 Production build succeeds: `npm run build`
-- [x] 3.4 Smoke test still passes against a running server: `npm run smoke`
+- [x] 3.1 Lint passes: `npm run lint` — 2c42aeb
+- [x] 3.2 Type check passes: `npm run check` — 2c42aeb
+- [x] 3.3 Production build succeeds: `npm run build` — 2c42aeb
+- [x] 3.4 Smoke test still passes against a running server: `npm run smoke` — 2c42aeb
 
 #### Manual
 
-- [x] 3.5 Signed out, `/chains` redirects to `/auth/signin`.
-- [x] 3.6 Signed in, creating a chain with only a name shows 0.0 km; creating one with `12.3` shows 12.3 km.
-- [x] 3.7 Creating "Winter" then "winter " (or "WINTER") is rejected with the duplicate-name message.
-- [x] 3.8 Editing a chain's name and km updates the row; changing "Winter" to "WINTER" on the same chain succeeds.
-- [x] 3.9 Deleting requires the confirm step; Cancel keeps the chain.
-- [x] 3.10 A second account sees none of the first account's chains.
-- [x] 3.11 The page is usable by keyboard only and status messages are announced.
+- [x] 3.5 Signed out, `/chains` redirects to `/auth/signin`. — 2c42aeb
+- [x] 3.6 Signed in, creating a chain with only a name shows 0.0 km; creating one with `12.3` shows 12.3 km. — 2c42aeb
+- [x] 3.7 Creating "Winter" then "winter " (or "WINTER") is rejected with the duplicate-name message. — 2c42aeb
+- [x] 3.8 Editing a chain's name and km updates the row; changing "Winter" to "WINTER" on the same chain succeeds. — 2c42aeb
+- [x] 3.9 Deleting requires the confirm step; Cancel keeps the chain. — 2c42aeb
+- [x] 3.10 A second account sees none of the first account's chains. — 2c42aeb
+- [x] 3.11 The page is usable by keyboard only and status messages are announced. — 2c42aeb

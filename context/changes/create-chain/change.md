@@ -1,7 +1,7 @@
 ---
 change_id: create-chain
 title: Create a chain
-status: implementing
+status: implemented
 created: 2026-10-22
 updated: 2026-10-22
 archived_at: null
