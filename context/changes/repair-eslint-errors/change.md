@@ -1,7 +1,7 @@
 ---
 change_id: repair-eslint-errors
 title: Repair eslint errors
-status: implementing
+status: implemented
 created: 2026-10-18
 updated: 2026-10-22
 archived_at: null

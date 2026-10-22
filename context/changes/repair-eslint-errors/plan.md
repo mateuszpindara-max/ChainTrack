@@ -141,11 +141,11 @@ No database or data migration is required.
 
 #### Automated
 
-- [x] 2.1 `npm run lint` passes.
-- [x] 2.2 `npx tsc --noEmit` passes.
-- [x] 2.3 `npm run check` passes.
-- [x] 2.4 `npm test` passes all existing Strava tests.
+- [x] 2.1 `npm run lint` passes. — bd4f251
+- [x] 2.2 `npx tsc --noEmit` passes. — bd4f251
+- [x] 2.3 `npm run check` passes. — bd4f251
+- [x] 2.4 `npm test` passes all existing Strava tests. — bd4f251
 
 #### Manual
 
-- [x] 2.5 After refreshing the relevant editor diagnostic provider if needed, confirm a fresh workspace diagnostic snapshot has no remaining instances of the current unsafe-type findings.
+- [x] 2.5 After refreshing the relevant editor diagnostic provider if needed, confirm a fresh workspace diagnostic snapshot has no remaining instances of the current unsafe-type findings. — bd4f251
