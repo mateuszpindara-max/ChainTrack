@@ -270,26 +270,26 @@ New table only; no existing data is changed. S-04 must reference `chains (user_i
 
 #### Automated
 
-- [x] 1.1 Migration applies cleanly: `npx supabase db reset`
-- [x] 1.2 Database tests pass, including the new file: `npx supabase test db`
+- [x] 1.1 Migration applies cleanly: `npx supabase db reset` — 2ba9bb2
+- [x] 1.2 Database tests pass, including the new file: `npx supabase test db` — 2ba9bb2
 
 #### Manual
 
-- [x] 1.3 In local Supabase Studio, the `chains` table shows RLS enabled with the single policy and the unique `(user_id, lower(name))` index.
+- [x] 1.3 In local Supabase Studio, the `chains` table shows RLS enabled with the single policy and the unique `(user_id, lower(name))` index. — 2ba9bb2
 
 ### Phase 2: Validation module and chain API
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass: `npm test`
-- [ ] 2.2 Lint passes: `npm run lint`
-- [ ] 2.3 Type check passes: `npm run check`
+- [x] 2.1 Unit tests pass: `npm test`
+- [x] 2.2 Lint passes: `npm run lint`
+- [x] 2.3 Type check passes: `npm run check`
 
 #### Manual
 
-- [ ] 2.4 With a signed-in session cookie, `POST /api/chains` creates a chain, repeating it with a different-case name returns 409, and `GET /api/chains` lists it.
-- [ ] 2.5 `PATCH` and `DELETE` on another user's chain id return 404.
-- [ ] 2.6 Requests without a session return 401.
+- [x] 2.4 With a signed-in session cookie, `POST /api/chains` creates a chain, repeating it with a different-case name returns 409, and `GET /api/chains` lists it.
+- [x] 2.5 `PATCH` and `DELETE` on another user's chain id return 404.
+- [x] 2.6 Requests without a session return 401.
 
 ### Phase 3: Chains page and navigation
 
