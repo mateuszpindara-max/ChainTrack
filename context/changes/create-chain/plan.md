@@ -281,31 +281,31 @@ New table only; no existing data is changed. S-04 must reference `chains (user_i
 
 #### Automated
 
-- [x] 2.1 Unit tests pass: `npm test`
-- [x] 2.2 Lint passes: `npm run lint`
-- [x] 2.3 Type check passes: `npm run check`
+- [x] 2.1 Unit tests pass: `npm test` — 44c10c4
+- [x] 2.2 Lint passes: `npm run lint` — 44c10c4
+- [x] 2.3 Type check passes: `npm run check` — 44c10c4
 
 #### Manual
 
-- [x] 2.4 With a signed-in session cookie, `POST /api/chains` creates a chain, repeating it with a different-case name returns 409, and `GET /api/chains` lists it.
-- [x] 2.5 `PATCH` and `DELETE` on another user's chain id return 404.
-- [x] 2.6 Requests without a session return 401.
+- [x] 2.4 With a signed-in session cookie, `POST /api/chains` creates a chain, repeating it with a different-case name returns 409, and `GET /api/chains` lists it. — 44c10c4
+- [x] 2.5 `PATCH` and `DELETE` on another user's chain id return 404. — 44c10c4
+- [x] 2.6 Requests without a session return 401. — 44c10c4
 
 ### Phase 3: Chains page and navigation
 
 #### Automated
 
-- [ ] 3.1 Lint passes: `npm run lint`
-- [ ] 3.2 Type check passes: `npm run check`
-- [ ] 3.3 Production build succeeds: `npm run build`
-- [ ] 3.4 Smoke test still passes against a running server: `npm run smoke`
+- [x] 3.1 Lint passes: `npm run lint`
+- [x] 3.2 Type check passes: `npm run check`
+- [x] 3.3 Production build succeeds: `npm run build`
+- [x] 3.4 Smoke test still passes against a running server: `npm run smoke`
 
 #### Manual
 
-- [ ] 3.5 Signed out, `/chains` redirects to `/auth/signin`.
-- [ ] 3.6 Signed in, creating a chain with only a name shows 0.0 km; creating one with `12.3` shows 12.3 km.
-- [ ] 3.7 Creating "Winter" then "winter " (or "WINTER") is rejected with the duplicate-name message.
-- [ ] 3.8 Editing a chain's name and km updates the row; changing "Winter" to "WINTER" on the same chain succeeds.
-- [ ] 3.9 Deleting requires the confirm step; Cancel keeps the chain.
-- [ ] 3.10 A second account sees none of the first account's chains.
-- [ ] 3.11 The page is usable by keyboard only and status messages are announced.
+- [x] 3.5 Signed out, `/chains` redirects to `/auth/signin`.
+- [x] 3.6 Signed in, creating a chain with only a name shows 0.0 km; creating one with `12.3` shows 12.3 km.
+- [x] 3.7 Creating "Winter" then "winter " (or "WINTER") is rejected with the duplicate-name message.
+- [x] 3.8 Editing a chain's name and km updates the row; changing "Winter" to "WINTER" on the same chain succeeds.
+- [x] 3.9 Deleting requires the confirm step; Cancel keeps the chain.
+- [x] 3.10 A second account sees none of the first account's chains.
+- [x] 3.11 The page is usable by keyboard only and status messages are announced.

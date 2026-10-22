@@ -176,14 +176,22 @@ export default function ActivityDashboard({
           <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Your rides</h1>
           <p className="mt-2 text-sm text-blue-100/70">Bike-linked activity history from Strava</p>
         </div>
-        <form method="POST" action="/api/auth/signout">
-          <button
-            type="submit"
-            className="rounded-md border border-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
+        <div className="flex items-center gap-3">
+          <a
+            href="/chains"
+            className="inline-flex min-h-10 items-center rounded-md border border-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
           >
-            Sign out
-          </button>
-        </form>
+            Chains
+          </a>
+          <form method="POST" action="/api/auth/signout">
+            <button
+              type="submit"
+              className="rounded-md border border-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
+            >
+              Sign out
+            </button>
+          </form>
+        </div>
       </header>
 
       <section className="flex flex-col justify-between gap-5 border-b border-white/15 py-7 sm:flex-row sm:items-center">
