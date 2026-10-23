@@ -4,6 +4,9 @@ export interface ActivityRow {
   distance_meters: number;
   started_at: string;
   bike_id: string;
+  chain_id?: string | null;
+  chain_name?: string | null;
+  is_waxing_start?: boolean;
 }
 
 export interface BikeRow {
@@ -17,6 +20,9 @@ export interface ActivityView {
   distanceMeters: number;
   startedAt: string;
   bikeName: string;
+  chainId: string | null;
+  chainName: string | null;
+  isWaxingStart: boolean;
 }
 
 export function toActivityViews(activities: ActivityRow[], bikes: BikeRow[]): ActivityView[] {
@@ -28,6 +34,9 @@ export function toActivityViews(activities: ActivityRow[], bikes: BikeRow[]): Ac
       distanceMeters: activity.distance_meters,
       startedAt: activity.started_at,
       bikeName: bikeNames.get(activity.bike_id) ?? "Unknown bike",
+      chainId: activity.chain_id ?? null,
+      chainName: activity.chain_name ?? null,
+      isWaxingStart: activity.is_waxing_start ?? false,
     }))
     .sort((first, second) => Date.parse(second.startedAt) - Date.parse(first.startedAt));
 }

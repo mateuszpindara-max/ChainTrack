@@ -364,24 +364,24 @@ The migration is additive: one new table, one view, one new unique constraint on
 
 #### Automated
 
-- [x] 1.1 Migrations apply cleanly from scratch: `npx supabase db reset`
-- [x] 1.2 Database tests pass, including the new waxing-marks file: `npx supabase test db`
+- [x] 1.1 Migrations apply cleanly from scratch: `npx supabase db reset` — aea8aaf
+- [x] 1.2 Database tests pass, including the new waxing-marks file: `npx supabase test db` — aea8aaf
 
 #### Manual
 
-- [x] 1.3 On a locally seeded database with rides on two bikes, the derived view shows each ride's chain carrying forward from the marked ride and never crossing bikes.
+- [x] 1.3 On a locally seeded database with rides on two bikes, the derived view shows each ride's chain carrying forward from the marked ride and never crossing bikes. — aea8aaf
 
 ### Phase 2: Server contract
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass: `npm test`
-- [ ] 2.2 Type checking passes: `npm run check`
-- [ ] 2.3 Linting passes: `npm run lint`
+- [x] 2.1 Unit tests pass: `npm test`
+- [x] 2.2 Type checking passes: `npm run check`
+- [x] 2.3 Linting passes: `npm run lint`
 
 #### Manual
 
-- [ ] 2.4 With the local stack running and a signed-in session, a PUT to the waxing route saves and clears a mark, and a bike-filtered activities request returns the derived chain fields.
+- [x] 2.4 With the local stack running and a signed-in session, a PUT to the waxing route saves and clears a mark, and a bike-filtered activities request returns the derived chain fields.
 
 ### Phase 3: Dashboard state and data hook
 

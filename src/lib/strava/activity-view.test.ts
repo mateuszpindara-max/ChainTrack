@@ -6,7 +6,16 @@ void test("activity views include the required fields in newest-first order", ()
   const views = toActivityViews(
     [
       { id: "old", name: "Morning ride", distance_meters: 12_300, started_at: "2026-10-12T07:00:00Z", bike_id: "b1" },
-      { id: "new", name: "Evening ride", distance_meters: 5_000, started_at: "2026-10-13T18:00:00Z", bike_id: "b2" },
+      {
+        id: "new",
+        name: "Evening ride",
+        distance_meters: 5_000,
+        started_at: "2026-10-13T18:00:00Z",
+        bike_id: "b2",
+        chain_id: "chain-2",
+        chain_name: "Touring chain",
+        is_waxing_start: true,
+      },
     ],
     [
       { id: "b1", name: "Road bike" },
@@ -18,12 +27,25 @@ void test("activity views include the required fields in newest-first order", ()
     views.map(({ id }) => id),
     ["new", "old"],
   );
+  assert.deepEqual(views[0], {
+    id: "new",
+    name: "Evening ride",
+    distanceMeters: 5_000,
+    startedAt: "2026-10-13T18:00:00Z",
+    bikeName: "Touring bike",
+    chainId: "chain-2",
+    chainName: "Touring chain",
+    isWaxingStart: true,
+  });
   assert.deepEqual(views[1], {
     id: "old",
     name: "Morning ride",
     distanceMeters: 12_300,
     startedAt: "2026-10-12T07:00:00Z",
     bikeName: "Road bike",
+    chainId: null,
+    chainName: null,
+    isWaxingStart: false,
   });
   assert.equal(formatDistanceKm(12_300), "12.3 km");
   assert.equal(formatLocalActivityDate("2026-10-13T01:00:00Z", "en-US", "America/Los_Angeles"), "Oct 12, 2026");

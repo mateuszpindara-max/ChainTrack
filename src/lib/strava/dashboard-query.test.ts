@@ -3,9 +3,12 @@ import { test } from "node:test";
 import type { ActivityRow, BikeRow } from "./activity-view.ts";
 import {
   DASHBOARD_PAGE_SIZE,
+  MAX_DASHBOARD_PAGE_SIZE,
   getActivityPage,
   getBikePage,
   parseActivityBikeFilter,
+  parseActivityChainFilter,
+  parseActivityLimit,
   parseDashboardOffset,
   type DashboardActivityStore,
   type DashboardBikeStore,
@@ -18,12 +21,23 @@ class MemoryDashboardStore implements DashboardActivityStore, DashboardBikeStore
   bikes: (BikeRow & { userId: string })[] = [];
   activities: (ActivityRow & { userId: string })[] = [];
 
-  readActivities(input: { userId: string; bikeId: string | null; offset: number; limit: number }) {
+  readActivities(input: {
+    userId: string;
+    bikeId: string | null;
+    chainId: string | null;
+    offset: number;
+    limit: number;
+  }) {
     return Promise.resolve(
       this.activities
         .filter(
           (activity) =>
-            activity.userId === input.userId && (input.bikeId === null || activity.bike_id === input.bikeId),
+            activity.userId === input.userId &&
+            (input.bikeId === null || activity.bike_id === input.bikeId) &&
+            (input.chainId === null ||
+              (input.chainId === "none"
+                ? activity.chain_id === null || activity.chain_id === undefined
+                : activity.chain_id === input.chainId)),
         )
         .sort((first, second) => second.started_at.localeCompare(first.started_at) || second.id.localeCompare(first.id))
         .slice(input.offset, input.offset + input.limit),
@@ -48,6 +62,28 @@ void test("parses bounded offsets and optional UUID bike filters", () => {
   assert.deepEqual(parseActivityBikeFilter(new URLSearchParams()), { success: true, bikeId: null });
   assert.deepEqual(parseActivityBikeFilter(new URLSearchParams(`bikeId=${bikeA}`)), { success: true, bikeId: bikeA });
   assert.deepEqual(parseActivityBikeFilter(new URLSearchParams("bikeId=not-a-uuid")), { success: false });
+  assert.deepEqual(parseActivityChainFilter(new URLSearchParams(`chainId=${bikeB}`), bikeA), {
+    success: true,
+    chainId: bikeB,
+  });
+  assert.deepEqual(parseActivityChainFilter(new URLSearchParams("chainId=none"), bikeA), {
+    success: true,
+    chainId: "none",
+  });
+  assert.deepEqual(parseActivityChainFilter(new URLSearchParams(`chainId=${bikeB}`), null), { success: false });
+  assert.deepEqual(parseActivityChainFilter(new URLSearchParams("chainId=invalid"), bikeA), { success: false });
+});
+
+void test("parses activity limits with a default, positive bounds, and a fixed cap", () => {
+  assert.deepEqual(parseActivityLimit(new URLSearchParams()), { success: true, limit: DASHBOARD_PAGE_SIZE });
+  assert.deepEqual(parseActivityLimit(new URLSearchParams("limit=1")), { success: true, limit: 1 });
+  assert.deepEqual(parseActivityLimit(new URLSearchParams(`limit=${MAX_DASHBOARD_PAGE_SIZE}`)), {
+    success: true,
+    limit: MAX_DASHBOARD_PAGE_SIZE,
+  });
+  for (const value of ["", "0", "501", "1.5", "1e2", "-1"]) {
+    assert.deepEqual(parseActivityLimit(new URLSearchParams(`limit=${value}`)), { success: false });
+  }
 });
 
 void test("activity pages are owner-scoped, optionally bike-filtered, and offset-paginated", async () => {
@@ -74,10 +110,30 @@ void test("activity pages are owner-scoped, optionally bike-filtered, and offset
     userId: "user-b",
   });
 
-  const firstPage = await getActivityPage(store, "user-a", 0, null);
-  const nextPage = await getActivityPage(store, "user-a", DASHBOARD_PAGE_SIZE, null);
-  const selectedPage = await getActivityPage(store, "user-a", 0, bikeA);
-  const unownedPage = await getActivityPage(store, "user-a", 0, "cccccccc-cccc-4ccc-8ccc-cccccccccccc");
+  const firstPage = await getActivityPage(store, "user-a", {
+    offset: 0,
+    bikeId: null,
+    chainId: null,
+    limit: DASHBOARD_PAGE_SIZE,
+  });
+  const nextPage = await getActivityPage(store, "user-a", {
+    offset: DASHBOARD_PAGE_SIZE,
+    bikeId: null,
+    chainId: null,
+    limit: DASHBOARD_PAGE_SIZE,
+  });
+  const selectedPage = await getActivityPage(store, "user-a", {
+    offset: 0,
+    bikeId: bikeA,
+    chainId: null,
+    limit: DASHBOARD_PAGE_SIZE,
+  });
+  const unownedPage = await getActivityPage(store, "user-a", {
+    offset: 0,
+    bikeId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    chainId: null,
+    limit: DASHBOARD_PAGE_SIZE,
+  });
 
   assert.equal(firstPage.activities.length, DASHBOARD_PAGE_SIZE);
   assert.equal(firstPage.hasMore, true);
@@ -86,6 +142,30 @@ void test("activity pages are owner-scoped, optionally bike-filtered, and offset
   assert.equal(firstPage.activities[0]?.id, `activity-${String(DASHBOARD_PAGE_SIZE + 1).padStart(3, "0")}`);
   assert.ok(selectedPage.activities.every((activity) => activity.bikeName === "Road"));
   assert.deepEqual(unownedPage, { activities: [], hasMore: false });
+});
+
+void test("activity pages filter by chain before paging and honor a custom limit", async () => {
+  const store = new MemoryDashboardStore();
+  store.bikes = [{ id: bikeA, name: "Road", userId: "user-a" }];
+  store.activities = [1, 2, 3, 4].map((number) => ({
+    id: `activity-${number}`,
+    name: `Ride ${number}`,
+    distance_meters: number * 100,
+    started_at: new Date(Date.UTC(2026, 0, 1, 0, number)).toISOString(),
+    bike_id: bikeA,
+    chain_id: number === 1 ? null : number < 4 ? bikeB : "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    chain_name: number === 1 ? null : number < 4 ? "Chain B" : "Other chain",
+    is_waxing_start: false,
+    userId: "user-a",
+  }));
+
+  const page = await getActivityPage(store, "user-a", { offset: 0, bikeId: bikeA, chainId: bikeB, limit: 1 });
+  assert.deepEqual(
+    page.activities.map((activity) => activity.id),
+    ["activity-3"],
+  );
+  assert.equal(page.activities[0]?.chainName, "Chain B");
+  assert.equal(page.hasMore, true);
 });
 
 void test("bike pages are owner-scoped, sorted, and report continuation", async () => {

@@ -123,7 +123,22 @@ export interface StravaSyncDatabase {
         { user_id: string; sync_run_id: string; strava_activity_id: number }
       >;
     };
-    Views: Record<string, never>;
+    Views: {
+      activities_with_chain: {
+        Row: {
+          id: string;
+          user_id: string;
+          bike_id: string | null;
+          name: string;
+          distance_meters: number;
+          started_at: string;
+          chain_id: string | null;
+          chain_name: string | null;
+          is_waxing_start: boolean;
+        };
+        Relationships: [];
+      };
+    };
     Functions: {
       apply_strava_sync_page: {
         Args: {

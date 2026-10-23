@@ -1,16 +1,21 @@
 import { toActivityViews, type ActivityRow, type ActivityView, type BikeRow } from "./activity-view.ts";
 
 export const DASHBOARD_PAGE_SIZE = 100;
+export const MAX_DASHBOARD_PAGE_SIZE = 500;
 const MAX_OFFSET = 1_000_000;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type ParsedOffset = { success: true; value: number } | { success: false };
 export type ParsedBikeFilter = { success: true; bikeId: string | null } | { success: false };
+export type ActivityChainFilter = string | null;
+export type ParsedChainFilter = { success: true; chainId: ActivityChainFilter } | { success: false };
+export type ParsedActivityLimit = { success: true; limit: number } | { success: false };
 
 export interface DashboardActivityStore {
   readActivities(input: {
     userId: string;
     bikeId: string | null;
+    chainId: ActivityChainFilter;
     offset: number;
     limit: number;
   }): Promise<ActivityRow[]>;
@@ -36,19 +41,42 @@ export function parseActivityBikeFilter(params: URLSearchParams): ParsedBikeFilt
   return { success: true, bikeId };
 }
 
+export function parseActivityChainFilter(params: URLSearchParams, bikeId: string | null): ParsedChainFilter {
+  const chainId = params.get("chainId");
+  if (chainId === null) return { success: true, chainId: null };
+  if (bikeId === null) return { success: false };
+  if (chainId === "none") return { success: true, chainId };
+  if (!UUID_PATTERN.test(chainId)) return { success: false };
+  return { success: true, chainId };
+}
+
+export function parseActivityLimit(params: URLSearchParams): ParsedActivityLimit {
+  const rawLimit = params.get("limit");
+  if (rawLimit === null) return { success: true, limit: DASHBOARD_PAGE_SIZE };
+  if (!/^\d+$/.test(rawLimit)) return { success: false };
+  const limit = Number(rawLimit);
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_DASHBOARD_PAGE_SIZE) return { success: false };
+  return { success: true, limit };
+}
+
 export async function getActivityPage(
   store: DashboardActivityStore,
   userId: string,
-  offset: number,
-  bikeId: string | null,
+  options: { offset: number; bikeId: string | null; chainId: ActivityChainFilter; limit: number },
 ): Promise<{ activities: ActivityView[]; hasMore: boolean }> {
-  const rows = await store.readActivities({ userId, bikeId, offset, limit: DASHBOARD_PAGE_SIZE + 1 });
-  const pageRows = rows.slice(0, DASHBOARD_PAGE_SIZE);
+  const rows = await store.readActivities({
+    userId,
+    bikeId: options.bikeId,
+    chainId: options.chainId,
+    offset: options.offset,
+    limit: options.limit + 1,
+  });
+  const pageRows = rows.slice(0, options.limit);
   const bikeIds = [...new Set(pageRows.map((activity) => activity.bike_id))];
   const bikes = await store.readBikes({ userId, ids: bikeIds });
   return {
     activities: toActivityViews(pageRows, bikes),
-    hasMore: rows.length > DASHBOARD_PAGE_SIZE,
+    hasMore: rows.length > options.limit,
   };
 }
 

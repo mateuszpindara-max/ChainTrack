@@ -3,6 +3,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   getActivityPage,
   parseActivityBikeFilter,
+  parseActivityChainFilter,
+  parseActivityLimit,
   parseDashboardOffset,
   type DashboardActivityStore,
 } from "@/lib/strava/dashboard-query.ts";
@@ -19,7 +21,9 @@ export const GET: APIRoute = async (context) => {
   const params = new URL(context.request.url).searchParams;
   const offset = parseDashboardOffset(params);
   const bikeFilter = parseActivityBikeFilter(params);
-  if (!offset.success || !bikeFilter.success) {
+  const chainFilter = parseActivityChainFilter(params, bikeFilter.success ? bikeFilter.bikeId : null);
+  const limit = parseActivityLimit(params);
+  if (!offset.success || !bikeFilter.success || !chainFilter.success || !limit.success) {
     return Response.json({ message: "Invalid activity page." }, { status: 400 });
   }
 
@@ -27,11 +31,13 @@ export const GET: APIRoute = async (context) => {
   const store: DashboardActivityStore = {
     async readActivities(input) {
       let query = db
-        .from("activities")
-        .select("id, name, distance_meters, started_at, bike_id")
+        .from("activities_with_chain")
+        .select("id, name, distance_meters, started_at, bike_id, chain_id, chain_name, is_waxing_start")
         .eq("user_id", input.userId)
         .not("bike_id", "is", null);
       if (input.bikeId) query = query.eq("bike_id", input.bikeId);
+      if (input.chainId === "none") query = query.is("chain_id", null);
+      else if (input.chainId !== null) query = query.eq("chain_id", input.chainId);
       const { data, error } = await query
         .order("started_at", { ascending: false })
         .order("id", { ascending: false })
@@ -48,7 +54,14 @@ export const GET: APIRoute = async (context) => {
   };
 
   try {
-    return Response.json(await getActivityPage(store, user.id, offset.value, bikeFilter.bikeId));
+    return Response.json(
+      await getActivityPage(store, user.id, {
+        offset: offset.value,
+        bikeId: bikeFilter.bikeId,
+        chainId: chainFilter.chainId,
+        limit: limit.limit,
+      }),
+    );
   } catch {
     return Response.json({ message: "Could not load activities." }, { status: 503 });
   }

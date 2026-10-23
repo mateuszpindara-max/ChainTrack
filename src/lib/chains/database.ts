@@ -24,6 +24,10 @@ export interface ChainsDatabase {
           created_at?: string;
         }
       >;
+      chain_waxing_marks: Table<
+        { activity_id: string; user_id: string; chain_id: string | null },
+        { activity_id: string; user_id: string; chain_id?: string | null }
+      >;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

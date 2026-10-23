@@ -14,6 +14,9 @@ const firstActivity: ActivityView = {
   distanceMeters: 12_500,
   startedAt: "2026-06-01T08:00:00.000Z",
   bikeName: "Road bike",
+  chainId: null,
+  chainName: null,
+  isWaxingStart: false,
 };
 
 void test("dashboard starts on the summary and transitions between All bikes and a selected bike", () => {

@@ -54,10 +54,28 @@ void test("repair result presentation includes destructive counts, partial state
   const complete: StravaSyncResponse = { ...partial, outcome: "complete", removed: 3, message: undefined };
   const failed: StravaSyncResponse = { ...partial, outcome: "failed", message: "Strava timed out." };
   const previousActivities = [
-    { id: "old", name: "Old", distanceMeters: 100, startedAt: "2020-01-01", bikeName: "Bike" },
+    {
+      id: "old",
+      name: "Old",
+      distanceMeters: 100,
+      startedAt: "2020-01-01",
+      bikeName: "Bike",
+      chainId: null,
+      chainName: null,
+      isWaxingStart: false,
+    },
   ];
   const refreshedActivities = [
-    { id: "fresh", name: "Fresh", distanceMeters: 200, startedAt: "2021-01-01", bikeName: "Bike" },
+    {
+      id: "fresh",
+      name: "Fresh",
+      distanceMeters: 200,
+      startedAt: "2021-01-01",
+      bikeName: "Bike",
+      chainId: null,
+      chainName: null,
+      isWaxingStart: false,
+    },
   ];
 
   assert.equal(syncResultMessage(partial), "Removal verification is saved.");
