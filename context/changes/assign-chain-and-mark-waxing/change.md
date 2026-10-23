@@ -1,7 +1,7 @@
 ---
 change_id: assign-chain-and-mark-waxing
 title: Mark fresh-wax rides and filter activities by chain
-status: implementing
+status: implemented
 created: 2026-10-23
 updated: 2026-10-23
 archived_at: null
