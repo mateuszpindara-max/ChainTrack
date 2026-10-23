@@ -225,30 +225,30 @@ No database schema change is expected. Existing bike and activity data remain th
 
 #### Automated
 
-- [x] 1.1 Unit tests (`npm test`) cover yearly summary aggregation, distinct bike counting, null-bike exclusion, local-year boundaries, and empty results.
-- [x] 1.2 Helper tests (`npm test`) cover user-ID scoping, selected-bike filtering (including an unowned UUID returning an empty page), invalid filter/range input, and offset pagination.
-- [x] 1.3 Lint and type check pass: `npm run lint`, `npm run check`.
+- [x] 1.1 Unit tests (`npm test`) cover yearly summary aggregation, distinct bike counting, null-bike exclusion, local-year boundaries, and empty results. — 064e3d8
+- [x] 1.2 Helper tests (`npm test`) cover user-ID scoping, selected-bike filtering (including an unowned UUID returning an empty page), invalid filter/range input, and offset pagination. — 064e3d8
+- [x] 1.3 Lint and type check pass: `npm run lint`, `npm run check`. — 064e3d8
 
 #### Manual
 
-- [x] 1.4 All-bikes and selected-bike API responses are correctly scoped and paginated, and signed-out requests receive 401.
-- [x] 1.5 Summary values are correct for local-year boundary instants and zero-ride years.
+- [x] 1.4 All-bikes and selected-bike API responses are correctly scoped and paginated, and signed-out requests receive 401. — 064e3d8
+- [x] 1.5 Summary values are correct for local-year boundary instants and zero-ride years. — 064e3d8
 
 ### Phase 2: Overview, sidebar, and responsive activity views
 
 #### Automated
 
-- [ ] 2.1 Helper tests (`npm test`) cover dashboard selection/refresh state: summary, All bikes, selected bike, empty state, post-sync refresh, and stale-response handling.
-- [ ] 2.2 Lint and type check pass: `npm run lint`, `npm run check`.
-- [ ] 2.3 Existing chain management and Strava response/synchronization tests pass with the new dashboard props and state flow.
+- [x] 2.1 Helper tests (`npm test`) cover dashboard selection/refresh state: summary, All bikes, selected bike, empty state, post-sync refresh, and stale-response handling.
+- [x] 2.2 Lint and type check pass: `npm run lint`, `npm run check`.
+- [x] 2.3 Existing chain management and Strava response/synchronization tests pass with the new dashboard props and state flow.
 
 #### Manual
 
-- [ ] 2.4 The default dashboard shows the yearly summary instead of a global activity list.
-- [ ] 2.5 All bikes and selected-bike views show the expected activities; imported bikes without activities remain visible with an empty state.
-- [ ] 2.6 Sidebar bike and chain sections are present, and chain navigation opens chain management.
-- [ ] 2.7 Strava import, new sync and history repair retain feedback and refresh the bike list and summary after saving.
-- [ ] 2.8 Desktop sidebar and mobile drawer are keyboard-operable and show loading, error, empty and status states clearly.
+- [x] 2.4 The default dashboard shows the yearly summary instead of a global activity list.
+- [x] 2.5 All bikes and selected-bike views show the expected activities; imported bikes without activities remain visible with an empty state.
+- [x] 2.6 Sidebar bike and chain sections are present, and chain navigation opens chain management.
+- [x] 2.7 Strava import, new sync and history repair retain feedback and refresh the bike list and summary after saving.
+- [x] 2.8 Desktop sidebar and mobile drawer are keyboard-operable and show loading, error, empty and status states clearly.
 
 ### Phase 3: Signed-in home routing and acceptance
 

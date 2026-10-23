@@ -2,21 +2,56 @@
 import ActivityDashboard from "@/components/ActivityDashboard";
 import Layout from "@/layouts/Layout.astro";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { toActivityViews } from "@/lib/strava/activity-view.ts";
+import type { BikeRow } from "@/lib/strava/activity-view.ts";
+import { toChainView, type ChainView } from "@/lib/chains/chain.ts";
+import type { ChainsDatabase } from "@/lib/chains/database.ts";
 import { createClient } from "@/lib/supabase";
 import type { StravaSyncDatabase } from "@/lib/strava/sync-database.ts";
 
 const { user } = Astro.locals;
 let connectionStatus: "connected" | "not-connected" | "unavailable" = "unavailable";
-let initialActivities = [] as ReturnType<typeof toActivityViews>;
-let initialLoadError = false;
-let initialHasMoreActivities = false;
+let initialBikes: BikeRow[] = [];
+let initialBikesHasMore = false;
+let initialBikesError = false;
+let initialChains: ChainView[] = [];
+let initialChainsHasMore = false;
+let initialChainsError = false;
 let initialImportCompleted = false;
 let initialActiveSyncRun = null as { id: string; mode: "new" | "repair"; status: "running" | "partial" } | null;
 
 const supabase = createClient(Astro.request.headers, Astro.cookies);
 if (supabase && user) {
   const db = supabase as unknown as SupabaseClient<StravaSyncDatabase>;
+  const chainsDb = supabase as unknown as SupabaseClient<ChainsDatabase>;
+  const [{ data: bikeRows, error: bikeError }, { data: chainRows, error: chainError }] = await Promise.all([
+    db
+      .from("bikes")
+      .select("id, name")
+      .eq("user_id", user.id)
+      .order("name", { ascending: true })
+      .order("id", { ascending: true })
+      .range(0, 100),
+    chainsDb
+      .from("chains")
+      .select("id, name, starting_distance_meters, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(0, 100),
+  ]);
+  if (bikeError) {
+    initialBikesError = true;
+  } else {
+    initialBikesHasMore = bikeRows.length > 100;
+    initialBikes = bikeRows.slice(0, 100);
+  }
+  if (chainError) {
+    initialChainsError = true;
+  } else {
+    initialChainsHasMore = chainRows.length > 100;
+    initialChains = chainRows.slice(0, 100).map(toChainView);
+  }
+
   const { data: connection, error: connectionError } = await db
     .from("strava_connections")
     .select("user_id, initial_import_completed_at")
@@ -30,22 +65,12 @@ if (supabase && user) {
   } else {
     connectionStatus = "connected";
     initialImportCompleted = Boolean(connection.initial_import_completed_at);
-    const [{ data: activeRun, error: activeRunError }, { data: activities, error: activityError }] = await Promise.all([
-      db
-        .from("strava_sync_runs")
-        .select("id, mode, status")
-        .eq("user_id", user.id)
-        .in("status", ["running", "partial"])
-        .maybeSingle(),
-      db
-        .from("activities")
-        .select("id, name, distance_meters, started_at, bike_id")
-        .eq("user_id", user.id)
-        .not("bike_id", "is", null)
-        .order("started_at", { ascending: false })
-        .order("id", { ascending: false })
-        .range(0, 100),
-    ]);
+    const { data: activeRun, error: activeRunError } = await db
+      .from("strava_sync_runs")
+      .select("id, mode, status")
+      .eq("user_id", user.id)
+      .in("status", ["running", "partial"])
+      .maybeSingle();
 
     if (!activeRunError && activeRun) {
       initialActiveSyncRun = {
@@ -54,26 +79,10 @@ if (supabase && user) {
         status: activeRun.status === "partial" ? "partial" : "running",
       };
     }
-
-    if (activityError) {
-      initialLoadError = true;
-    } else {
-      const bikeLinkedActivities = activities.filter(
-        (activity): activity is typeof activity & { bike_id: string } => activity.bike_id !== null,
-      );
-      const bikeIds = [...new Set(bikeLinkedActivities.map((activity) => activity.bike_id))];
-      const { data: bikes, error: bikeError } =
-        bikeIds.length > 0
-          ? await db.from("bikes").select("id, name").eq("user_id", user.id).in("id", bikeIds)
-          : { data: [], error: null };
-      if (bikeError) {
-        initialLoadError = true;
-      } else {
-        initialHasMoreActivities = activities.length > 100;
-        initialActivities = toActivityViews(bikeLinkedActivities.slice(0, 100), bikes);
-      }
-    }
   }
+} else if (user) {
+  initialBikesError = true;
+  initialChainsError = true;
 }
 ---
 
@@ -82,9 +91,12 @@ if (supabase && user) {
     <ActivityDashboard
       client:load
       connectionStatus={connectionStatus}
-      initialActivities={initialActivities}
-      initialLoadError={initialLoadError}
-      initialHasMoreActivities={initialHasMoreActivities}
+      initialBikes={initialBikes}
+      initialBikesHasMore={initialBikesHasMore}
+      initialBikesError={initialBikesError}
+      initialChains={initialChains}
+      initialChainsHasMore={initialChainsHasMore}
+      initialChainsError={initialChainsError}
       initialImportCompleted={initialImportCompleted}
       initialActiveSyncRun={initialActiveSyncRun}
     />

@@ -1,8 +1,13 @@
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { Menu, X } from "lucide-react";
+import DashboardSidebar from "@/components/DashboardSidebar";
+import YearSummary from "@/components/YearSummary";
+import { useDashboardData } from "@/components/hooks/useDashboardData";
+import type { ChainView } from "@/lib/chains/chain.ts";
 import { formatDistanceKm, formatLocalActivityDate, type ActivityView } from "@/lib/strava/activity-view.ts";
+import type { BikeRow } from "@/lib/strava/activity-view.ts";
 import {
   activeRunAfterSync,
-  activitiesAfterSync,
   buildStravaSyncRequest,
   syncCountSummary,
   syncResultMessage,
@@ -14,16 +19,14 @@ import {
 type ImportResponse = InitialImportResponse & Partial<StravaSyncResponse>;
 type ActiveSyncRun = ActiveStravaSyncRun;
 
-interface ActivityPage {
-  activities: ActivityView[];
-  hasMore: boolean;
-}
-
 interface Props {
   connectionStatus: "connected" | "not-connected" | "unavailable";
-  initialActivities: ActivityView[];
-  initialLoadError: boolean;
-  initialHasMoreActivities: boolean;
+  initialBikes: BikeRow[];
+  initialBikesHasMore: boolean;
+  initialBikesError: boolean;
+  initialChains: ChainView[];
+  initialChainsHasMore: boolean;
+  initialChainsError: boolean;
   initialImportCompleted: boolean;
   initialActiveSyncRun: ActiveSyncRun | null;
 }
@@ -51,12 +54,6 @@ function isImportResponse(value: unknown): value is ImportResponse {
   );
 }
 
-function isActivityPage(value: unknown): value is ActivityPage {
-  if (typeof value !== "object" || value === null) return false;
-  const page = value as Record<string, unknown>;
-  return Array.isArray(page.activities) && typeof page.hasMore === "boolean";
-}
-
 function LocalActivityDate({ value }: { value: string }) {
   const date = useSyncExternalStore(
     subscribeToLocalTimeZone,
@@ -69,22 +66,51 @@ function LocalActivityDate({ value }: { value: string }) {
 
 export default function ActivityDashboard({
   connectionStatus,
-  initialActivities,
-  initialLoadError,
-  initialHasMoreActivities,
+  initialBikes,
+  initialBikesHasMore,
+  initialBikesError,
+  initialChains,
+  initialChainsHasMore,
+  initialChainsError,
   initialImportCompleted,
   initialActiveSyncRun,
 }: Props) {
-  const [activities, setActivities] = useState(initialActivities);
+  const data = useDashboardData({
+    initialBikes,
+    initialBikesHasMore,
+    initialBikesError,
+    initialChains,
+    initialChainsHasMore,
+    initialChainsError,
+  });
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerRef = useRef<HTMLDialogElement>(null);
+  const drawerTriggerRef = useRef<HTMLButtonElement>(null);
   const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMoreActivities, setHasMoreActivities] = useState(initialHasMoreActivities);
-  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [importCompleted, setImportCompleted] = useState(initialImportCompleted);
   const [importBatchHasMore, setImportBatchHasMore] = useState(false);
   const [activeSyncRun, setActiveSyncRun] = useState(initialActiveSyncRun);
   const [loadingAction, setLoadingAction] = useState<"initial" | "new" | "repair" | null>(null);
   const [result, setResult] = useState<ImportResponse | null>(null);
+  const selection = data.dashboard.selection;
+  const selectedBikeId = selection.kind === "activities" ? selection.bikeId : null;
+  const selectedBikeTitle =
+    selectedBikeId !== null
+      ? (data.bikes.items.find((bike) => bike.id === selectedBikeId)?.name ?? "Selected bike")
+      : "All bikes";
+
+  useEffect(() => {
+    const dialog = drawerRef.current;
+    if (!dialog) return;
+    if (drawerOpen && !dialog.open) dialog.showModal();
+    if (!drawerOpen && dialog.open) dialog.close();
+  }, [drawerOpen]);
+
+  function closeDrawer() {
+    setDrawerOpen(false);
+    drawerRef.current?.close();
+    drawerTriggerRef.current?.focus();
+  }
 
   async function importActivities() {
     setLoading(true);
@@ -96,8 +122,7 @@ export default function ActivityDashboard({
       if (!isImportResponse(payload)) throw new Error("The activity import returned an invalid response.");
       if (!response.ok) throw new Error(payload.message ?? "The activity import could not be started.");
       setResult(payload);
-      if (payload.activities) setActivities(payload.activities);
-      if (payload.hasMoreActivities !== undefined) setHasMoreActivities(payload.hasMoreActivities);
+      data.refreshAfterSavedChanges(payload);
       if (payload.outcome === "complete") {
         setImportCompleted(true);
         setImportBatchHasMore(false);
@@ -133,8 +158,7 @@ export default function ActivityDashboard({
       const payload: unknown = await response.json();
       if (!isImportResponse(payload)) throw new Error("The Strava synchronization returned an invalid response.");
       setResult({ ...payload, mode });
-      setActivities(activitiesAfterSync(activities, payload));
-      if (payload.hasMoreActivities !== undefined) setHasMoreActivities(payload.hasMoreActivities);
+      data.refreshAfterSavedChanges(payload);
       setActiveSyncRun(activeRunAfterSync(mode, payload, activeSyncRun));
     } catch (error) {
       setResult({
@@ -151,42 +175,33 @@ export default function ActivityDashboard({
     }
   }
 
-  async function loadMoreActivities() {
-    setLoadingMore(true);
-    setLoadMoreError(null);
-    try {
-      const response = await fetch(`/api/strava/activities?offset=${activities.length}`);
-      const payload: unknown = await response.json();
-      if (!isActivityPage(payload)) throw new Error("The activity page returned an invalid response.");
-      if (!response.ok) throw new Error("Activities could not be loaded.");
-      setActivities((current) => [...current, ...payload.activities]);
-      setHasMoreActivities(payload.hasMore);
-    } catch (error) {
-      setLoadMoreError(error instanceof Error ? error.message : "Activities could not be loaded.");
-    } finally {
-      setLoadingMore(false);
-    }
-  }
-
   return (
-    <main className="mx-auto min-h-screen w-full max-w-6xl px-5 py-8 text-white sm:px-8 sm:py-12">
-      <header className="flex flex-wrap items-start justify-between gap-6 border-b border-white/15 pb-8">
+    <main className="mx-auto min-h-screen w-full max-w-[90rem] px-5 py-6 text-white sm:px-8 sm:py-10">
+      <header className="flex flex-wrap items-start justify-between gap-5 border-b border-white/15 pb-6">
         <div>
           <p className="text-sm font-semibold text-orange-300 uppercase">ChainTrack</p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Your rides</h1>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Your rides</h1>
           <p className="mt-2 text-sm text-blue-100/70">Bike-linked activity history from Strava</p>
         </div>
         <div className="flex items-center gap-3">
-          <a
-            href="/chains"
-            className="inline-flex min-h-10 items-center rounded-md border border-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
+          <button
+            ref={drawerTriggerRef}
+            type="button"
+            onClick={() => {
+              setDrawerOpen(true);
+            }}
+            aria-haspopup="dialog"
+            aria-expanded={drawerOpen}
+            aria-controls="dashboard-navigation-dialog"
+            className="inline-flex min-h-10 items-center gap-2 rounded-md border border-white/20 px-3 py-2 text-sm font-medium text-white hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 md:hidden"
           >
-            Chains
-          </a>
+            <Menu aria-hidden="true" size={18} />
+            Menu
+          </button>
           <form method="POST" action="/api/auth/signout">
             <button
               type="submit"
-              className="rounded-md border border-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
+              className="min-h-10 rounded-md border border-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
             >
               Sign out
             </button>
@@ -194,7 +209,7 @@ export default function ActivityDashboard({
         </div>
       </header>
 
-      <section className="flex flex-col justify-between gap-5 border-b border-white/15 py-7 sm:flex-row sm:items-center">
+      <section className="flex flex-col justify-between gap-5 border-b border-white/15 py-6 sm:flex-row sm:items-center">
         <div>
           <p className="text-xs font-semibold text-blue-100/55 uppercase">Strava connection</p>
           <p className="mt-2 flex items-center gap-2 text-base font-medium">
@@ -271,94 +286,174 @@ export default function ActivityDashboard({
         ) : null}
       </section>
 
-      <section className="py-7" aria-labelledby="activity-heading">
-        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-white/15 pb-4">
-          <div>
-            <p className="text-xs font-semibold text-blue-100/55 uppercase">History</p>
-            <h2 id="activity-heading" className="mt-2 text-xl font-semibold">
-              Activities
-            </h2>
-          </div>
-          <p className="text-sm text-blue-100/60">
-            {activities.length} {activities.length === 1 ? "activity" : "activities"}
-          </p>
+      {loading && (
+        <p className="border-b border-white/10 py-4 text-sm text-blue-100" role="status" aria-live="polite">
+          {loadingAction === "new"
+            ? "Checking Strava for newly visible activities..."
+            : loadingAction === "repair"
+              ? "Repairing your full Strava history..."
+              : "Fetching bike details and activity history from Strava..."}
+        </p>
+      )}
+      {result && (
+        <div
+          className={`border-b border-white/10 py-4 ${result.outcome === "failed" ? "text-rose-200" : result.outcome === "partial" ? "text-amber-200" : "text-emerald-200"}`}
+          role="status"
+          aria-live="polite"
+        >
+          <p className="text-sm font-medium">{syncResultMessage(result)}</p>
+          {(result.outcome !== "failed" || result.mode === "new" || result.mode === "repair") && (
+            <p className="mt-1 text-sm text-blue-100/70">{syncCountSummary(result)}</p>
+          )}
+          {result.skipped > 0 && (
+            <p className="mt-2 text-sm text-blue-100/70">
+              {result.mode === "repair"
+                ? `${result.skipped} ${result.skipped === 1 ? "activity remains" : "activities remain"} hidden because no unambiguous bike was found.`
+                : `${result.skipped} ${result.skipped === 1 ? "activity was" : "activities were"} skipped because no matching bike was found.`}
+            </p>
+          )}
         </div>
+      )}
 
-        {loading && (
-          <p className="border-b border-white/10 py-4 text-sm text-blue-100" role="status" aria-live="polite">
-            {loadingAction === "new"
-              ? "Checking Strava for newly visible activities..."
-              : loadingAction === "repair"
-                ? "Repairing your full Strava history..."
-                : "Fetching bike details and activity history from Strava..."}
-          </p>
-        )}
-        {initialLoadError && (
-          <p className="border-b border-white/10 py-4 text-sm text-amber-200" role="status">
-            Activities could not be loaded. You can retry by importing history.
-          </p>
-        )}
-        {result && (
-          <div
-            className={`border-b border-white/10 py-4 ${result.outcome === "failed" ? "text-rose-200" : result.outcome === "partial" ? "text-amber-200" : "text-emerald-200"}`}
-            role="status"
-            aria-live="polite"
-          >
-            <p className="text-sm font-medium">{syncResultMessage(result)}</p>
-            {(result.outcome !== "failed" || result.mode === "new" || result.mode === "repair") && (
-              <p className="mt-1 text-sm text-blue-100/70">{syncCountSummary(result)}</p>
-            )}
-            {result.skipped > 0 && (
-              <p className="mt-2 text-sm text-blue-100/70">
-                {result.mode === "repair"
-                  ? `${result.skipped} ${result.skipped === 1 ? "activity remains" : "activities remain"} hidden because no unambiguous bike was found.`
-                  : `${result.skipped} ${result.skipped === 1 ? "activity was" : "activities were"} skipped because no matching bike was found.`}
-              </p>
-            )}
-          </div>
-        )}
+      <div className="grid gap-8 md:grid-cols-[15rem_minmax(0,1fr)] md:gap-10">
+        <aside className="hidden border-r border-white/10 py-8 pr-5 md:block">
+          <DashboardSidebar
+            selection={data.dashboard.selection}
+            bikes={data.bikes}
+            chains={data.chains}
+            onSelectSummary={data.selectSummary}
+            onSelectAllBikes={data.selectAllBikes}
+            onSelectBike={data.selectBike}
+            onRetryBikes={data.retryBikes}
+            onRetryChains={data.retryChains}
+            onLoadMoreBikes={data.loadMoreBikes}
+            onLoadMoreChains={data.loadMoreChains}
+          />
+        </aside>
 
-        {activities.length === 0 ? (
-          <p className="py-8 text-sm text-blue-100/65">
-            {result?.outcome === "complete"
-              ? "No bike-linked activities were found in your Strava history."
-              : "No imported activities yet."}
-          </p>
-        ) : (
-          <ul className="divide-y divide-white/10">
-            {activities.map((activity) => (
-              <li
-                key={activity.id}
-                className="grid gap-2 py-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-6"
-              >
-                <div className="min-w-0">
-                  <h3 className="truncate text-base font-medium text-white">{activity.name}</h3>
-                  <p className="mt-1 text-sm text-blue-100/60">{activity.bikeName}</p>
+        <section className="min-w-0 py-5 md:py-8" aria-live="polite">
+          {data.dashboard.selection.kind === "summary" ? (
+            <YearSummary
+              year={data.summaryYear}
+              summary={data.summary.value}
+              loading={data.summary.loading}
+              error={data.summary.error}
+              onRetry={data.retrySummary}
+            />
+          ) : (
+            <section aria-labelledby="activity-heading">
+              <div className="flex flex-wrap items-end justify-between gap-3 border-b border-white/15 pb-4">
+                <div>
+                  <p className="text-xs font-semibold text-blue-100/55 uppercase">History</p>
+                  <h2 id="activity-heading" className="mt-2 text-xl font-semibold">
+                    {selectedBikeTitle}
+                  </h2>
                 </div>
-                <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-blue-100/75 sm:justify-end">
-                  <span className="font-medium text-white">{formatDistanceKm(activity.distanceMeters)}</span>
-                  <LocalActivityDate value={activity.startedAt} />
+                {data.dashboard.activityStatus === "ready" && (
+                  <p className="text-sm text-blue-100/60">
+                    {data.dashboard.activities.length}{" "}
+                    {data.dashboard.activities.length === 1 ? "activity" : "activities"}
+                  </p>
+                )}
+              </div>
+              {data.dashboard.activityStatus === "loading" && (
+                <p className="py-6 text-sm text-blue-100/70" role="status">
+                  Loading activities...
+                </p>
+              )}
+              {data.dashboard.activityStatus === "error" && (
+                <div className="py-6 text-sm text-amber-200" role="alert">
+                  <p>{data.dashboard.activityError}</p>
+                  <button
+                    type="button"
+                    onClick={data.retryActivities}
+                    className="mt-2 min-h-10 rounded px-3 py-2 font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
+                  >
+                    Retry activities
+                  </button>
                 </div>
-              </li>
-            ))}
-          </ul>
-        )}
-        {loadMoreError && (
-          <p className="py-4 text-sm text-amber-200" role="status">
-            {loadMoreError}
-          </p>
-        )}
-        {hasMoreActivities && (
+              )}
+              {data.dashboard.activityStatus === "ready" && data.dashboard.activities.length === 0 && (
+                <p className="py-8 text-sm text-blue-100/65">
+                  {selectedBikeId !== null
+                    ? "No visible activities for this bike yet."
+                    : "No bike-linked activities yet."}
+                </p>
+              )}
+              {data.dashboard.activities.length > 0 && (
+                <ul className="divide-y divide-white/10">
+                  {data.dashboard.activities.map((activity: ActivityView) => (
+                    <li
+                      key={activity.id}
+                      className="grid gap-2 py-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-6"
+                    >
+                      <div className="min-w-0">
+                        <h3 className="truncate text-base font-medium text-white">{activity.name}</h3>
+                        <p className="mt-1 text-sm text-blue-100/60">{activity.bikeName}</p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-blue-100/75 sm:justify-end">
+                        <span className="font-medium text-white">{formatDistanceKm(activity.distanceMeters)}</span>
+                        <LocalActivityDate value={activity.startedAt} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {data.dashboard.loadMoreError && (
+                <p className="py-4 text-sm text-amber-200" role="alert">
+                  {data.dashboard.loadMoreError}
+                </p>
+              )}
+              {data.dashboard.hasMoreActivities && (
+                <button
+                  type="button"
+                  onClick={data.loadMoreActivities}
+                  disabled={data.dashboard.loadingMoreActivities}
+                  className="mt-5 min-h-10 rounded-md border border-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-wait disabled:opacity-60"
+                >
+                  {data.dashboard.loadingMoreActivities ? "Loading activities..." : "Load more"}
+                </button>
+              )}
+            </section>
+          )}
+        </section>
+      </div>
+
+      <dialog
+        id="dashboard-navigation-dialog"
+        ref={drawerRef}
+        onClose={() => {
+          setDrawerOpen(false);
+          drawerTriggerRef.current?.focus();
+        }}
+        aria-label="Dashboard navigation"
+        className="fixed inset-y-0 left-0 m-0 h-full max-h-none w-[min(22rem,calc(100vw-2.5rem))] max-w-none border-r border-white/15 bg-slate-950 p-5 text-white backdrop:bg-black/65 md:hidden"
+      >
+        <div className="mb-6 flex items-center justify-between border-b border-white/15 pb-4">
+          <p className="text-sm font-semibold text-orange-300">Navigation</p>
           <button
             type="button"
-            onClick={loadMoreActivities}
-            disabled={loadingMore}
-            className="mt-5 min-h-10 rounded-md border border-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-wait disabled:opacity-60"
+            onClick={closeDrawer}
+            aria-label="Close navigation"
+            className="grid size-10 place-items-center rounded border border-white/20 text-lg hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
           >
-            {loadingMore ? "Loading activities..." : "Load more"}
+            <X aria-hidden="true" size={18} />
           </button>
-        )}
-      </section>
+        </div>
+        <DashboardSidebar
+          selection={data.dashboard.selection}
+          bikes={data.bikes}
+          chains={data.chains}
+          onSelectSummary={data.selectSummary}
+          onSelectAllBikes={data.selectAllBikes}
+          onSelectBike={data.selectBike}
+          onRetryBikes={data.retryBikes}
+          onRetryChains={data.retryChains}
+          onLoadMoreBikes={data.loadMoreBikes}
+          onLoadMoreChains={data.loadMoreChains}
+          onNavigate={closeDrawer}
+        />
+      </dialog>
     </main>
   );
 }

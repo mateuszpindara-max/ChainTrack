@@ -29,6 +29,7 @@
     "/^node --input-type=module -e 'import \\{ ESLint \\} from \"eslint\"; const eslint=new ESLint\\(\\{cwd:process\\.cwd\\(\\)\\}\\); const \\[result\\]=await eslint\\.lintFiles\\(\\[\"src/components/ActivityDashboard\\.tsx\"\\]\\); const config=await eslint\\.calculateConfigForFile\\(\"src/components/ActivityDashboard\\.tsx\"\\); console\\.log\\(JSON\\.stringify\\(\\{cwd:process\\.cwd\\(\\),file:result\\.filePath,errorCount:result\\.errorCount,warningCount:result\\.warningCount,messages:result\\.messages,ruleSeverity:config\\.rules\\[\"@typescript-eslint/no-redundant-type-constituents\"\\]\\},null,2\\)\\);'$/": {
       "approve": true,
       "matchCommandLine": true
-    }
+    },
+    "npm exec": true
   }
 }
