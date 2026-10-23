@@ -387,25 +387,25 @@ The migration is additive: one new table, one view, one new unique constraint on
 
 #### Automated
 
-- [x] 3.1 State and request-building tests pass: `npm test`
-- [x] 3.2 Type checking passes after the hook changes: `npm run check`
-- [x] 3.3 Linting passes after the hook changes: `npm run lint`
+- [x] 3.1 State and request-building tests pass: `npm test` — c365518
+- [x] 3.2 Type checking passes after the hook changes: `npm run check` — c365518
+- [x] 3.3 Linting passes after the hook changes: `npm run lint` — c365518
 
 ### Phase 4: Dashboard UI and acceptance
 
 #### Automated
 
-- [ ] 4.1 Linting passes: `npm run lint`
-- [ ] 4.2 Type checking passes: `npm run check`
-- [ ] 4.3 Unit tests pass: `npm test`
-- [ ] 4.4 Production build succeeds: `npm run build`
-- [ ] 4.5 Auth-flow smoke test passes against a running local server: `npm run smoke`
+- [x] 4.1 Linting passes: `npm run lint`
+- [x] 4.2 Type checking passes: `npm run check`
+- [x] 4.3 Unit tests pass: `npm test`
+- [x] 4.4 Production build succeeds: `npm run build`
+- [x] 4.5 Auth-flow smoke test passes against a running local server: `npm run smoke`
 
 #### Manual
 
-- [ ] 4.6 Marking a ride shows that ride and every later ride on the same bike carrying the chain, until the next mark on that bike, and rides on other bikes are unaffected.
-- [ ] 4.7 The chain filter appears only when a bike is selected, lists the correct rides for a chain and for "No chain", and resets when the bike changes.
-- [ ] 4.8 After setting or clearing a mark, loaded rides re-label correctly without losing scroll position, and rides that no longer match the active chain filter drop out.
-- [ ] 4.9 Deleting a chain from `/chains` shows copy about marked rides. Afterward the rides it covered show "No chain" and the former marked ride shows "Chain removed" and can be re-marked or cleared.
-- [ ] 4.10 The controls work by keyboard only, saving and error messages are announced, and the layout is usable at mobile width.
-- [ ] 4.11 After a Strava repair run with a connected account, existing marks and chains on rides are unchanged.
+- [x] 4.6 Marking a ride shows that ride and every later ride on the same bike carrying the chain, until the next mark on that bike, and rides on other bikes are unaffected.
+- [x] 4.7 The chain filter appears only when a bike is selected, lists the correct rides for a chain and for "No chain", and resets when the bike changes.
+- [x] 4.8 After setting or clearing a mark, loaded rides re-label correctly without losing scroll position, and rides that no longer match the active chain filter drop out.
+- [x] 4.9 Deleting a chain from `/chains` shows copy about marked rides. Afterward the rides it covered show "No chain" and the former marked ride shows "Chain removed" and can be re-marked or cleared.
+- [x] 4.10 The controls work by keyboard only, saving and error messages are announced, and the layout is usable at mobile width.
+- [x] 4.11 After a Strava repair run with a connected account, existing marks and chains on rides are unchanged.

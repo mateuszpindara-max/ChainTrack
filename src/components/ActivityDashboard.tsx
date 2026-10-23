@@ -93,6 +93,8 @@ export default function ActivityDashboard({
   const [activeSyncRun, setActiveSyncRun] = useState(initialActiveSyncRun);
   const [loadingAction, setLoadingAction] = useState<"initial" | "new" | "repair" | null>(null);
   const [result, setResult] = useState<ImportResponse | null>(null);
+  const waxingSelectRefs = useRef(new Map<string, HTMLSelectElement>());
+  const waxingFocusRequest = useRef<string | null>(null);
   const selection = data.dashboard.selection;
   const selectedBikeId = selection.kind === "activities" ? selection.bikeId : null;
   const selectedBikeTitle =
@@ -106,6 +108,13 @@ export default function ActivityDashboard({
     if (drawerOpen && !dialog.open) dialog.showModal();
     if (!drawerOpen && dialog.open) dialog.close();
   }, [drawerOpen]);
+
+  useEffect(() => {
+    const activityId = waxingFocusRequest.current;
+    if (data.waxingMarkSave.isBusy || activityId === null) return;
+    waxingFocusRequest.current = null;
+    waxingSelectRefs.current.get(activityId)?.focus();
+  }, [data.waxingMarkSave.isBusy]);
 
   function closeDrawer() {
     setDrawerOpen(false);
@@ -360,6 +369,60 @@ export default function ActivityDashboard({
                   </p>
                 )}
               </div>
+              {selectedBikeId !== null && (
+                <div className="grid gap-2 border-b border-white/10 py-4 sm:max-w-md">
+                  <label htmlFor="activity-chain-filter" className="text-sm font-medium text-blue-100/85">
+                    Filter by chain
+                  </label>
+                  <select
+                    id="activity-chain-filter"
+                    value={selection.kind === "activities" ? (selection.chainId ?? "all") : "all"}
+                    onChange={(event) => {
+                      const value = event.currentTarget.value;
+                      data.selectChainFilter(value === "all" ? null : value);
+                    }}
+                    disabled={data.chains.loading}
+                    aria-describedby={
+                      data.chains.loading
+                        ? "activity-chain-filter-loading"
+                        : data.chains.error
+                          ? "activity-chain-filter-error"
+                          : undefined
+                    }
+                    className="min-h-11 w-full rounded-md border border-white/20 bg-slate-950/60 px-3 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-wait disabled:opacity-60"
+                  >
+                    <option value="all">All chains</option>
+                    {data.chains.items.map((chain) => (
+                      <option key={chain.id} value={chain.id}>
+                        {chain.name}
+                      </option>
+                    ))}
+                    <option value="none">No chain</option>
+                  </select>
+                  {data.chains.loading && (
+                    <p
+                      id="activity-chain-filter-loading"
+                      className="text-sm text-blue-100/65"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      Loading chains...
+                    </p>
+                  )}
+                  {data.chains.error && (
+                    <div id="activity-chain-filter-error" className="text-sm text-amber-200" role="alert">
+                      <p>{data.chains.error}</p>
+                      <button
+                        type="button"
+                        onClick={data.retryChains}
+                        className="mt-1 min-h-10 rounded px-2 py-1 font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
+                      >
+                        Retry chains
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
               {data.dashboard.activityStatus === "loading" && (
                 <p className="py-6 text-sm text-blue-100/70" role="status">
                   Loading activities...
@@ -380,7 +443,9 @@ export default function ActivityDashboard({
               {data.dashboard.activityStatus === "ready" && data.dashboard.activities.length === 0 && (
                 <p className="py-8 text-sm text-blue-100/65">
                   {selectedBikeId !== null
-                    ? "No visible activities for this bike yet."
+                    ? selection.kind === "activities" && selection.chainId !== null
+                      ? "No activities match this chain filter."
+                      : "No visible activities for this bike yet."
                     : "No bike-linked activities yet."}
                 </p>
               )}
@@ -389,15 +454,84 @@ export default function ActivityDashboard({
                   {data.dashboard.activities.map((activity: ActivityView) => (
                     <li
                       key={activity.id}
-                      className="grid gap-2 py-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-6"
+                      className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-6"
                     >
                       <div className="min-w-0">
                         <h3 className="truncate text-base font-medium text-white">{activity.name}</h3>
                         <p className="mt-1 text-sm text-blue-100/60">{activity.bikeName}</p>
+                        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-blue-100/75">
+                          <span>
+                            {activity.isWaxingStart && activity.chainId === null
+                              ? "Chain removed"
+                              : (activity.chainName ?? "No chain")}
+                          </span>
+                          {activity.isWaxingStart && <span className="font-medium text-orange-200">Fresh wax</span>}
+                        </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-blue-100/75 sm:justify-end">
                         <span className="font-medium text-white">{formatDistanceKm(activity.distanceMeters)}</span>
                         <LocalActivityDate value={activity.startedAt} />
+                      </div>
+                      <div className="grid gap-1 sm:col-span-2 lg:col-span-1 lg:min-w-56">
+                        <label htmlFor={`waxing-mark-${activity.id}`} className="text-sm font-medium text-blue-100/85">
+                          Fresh-wax mark for {activity.name}
+                        </label>
+                        <select
+                          ref={(element) => {
+                            if (element) waxingSelectRefs.current.set(activity.id, element);
+                            else waxingSelectRefs.current.delete(activity.id);
+                          }}
+                          id={`waxing-mark-${activity.id}`}
+                          value={activity.isWaxingStart ? (activity.chainId ?? "chain-removed") : ""}
+                          onChange={(event) => {
+                            waxingFocusRequest.current = activity.id;
+                            void data.saveWaxingMark(activity.id, event.currentTarget.value || null);
+                          }}
+                          disabled={data.waxingMarkSave.isBusy}
+                          aria-busy={data.waxingMarkSave.isBusy}
+                          aria-describedby={
+                            data.waxingMarkSave.activityId === activity.id && data.waxingMarkSave.error
+                              ? `waxing-mark-error-${activity.id}`
+                              : undefined
+                          }
+                          className="min-h-11 w-full rounded-md border border-white/20 bg-slate-950/60 px-3 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-wait disabled:opacity-60"
+                        >
+                          <option value="">Not a fresh-wax ride</option>
+                          {activity.isWaxingStart && activity.chainId === null && (
+                            <option value="chain-removed" disabled>
+                              Chain removed
+                            </option>
+                          )}
+                          {data.chains.items.map((chain) => (
+                            <option key={chain.id} value={chain.id}>
+                              {chain.name}
+                            </option>
+                          ))}
+                        </select>
+                        {data.waxingMarkSave.activityId === activity.id &&
+                          (data.waxingMarkSave.phase === "saving" || data.waxingMarkSave.phase === "refreshing") && (
+                            <p className="text-sm text-blue-100/70" role="status" aria-live="polite">
+                              {data.waxingMarkSave.phase === "saving"
+                                ? "Saving fresh-wax mark..."
+                                : "Refreshing rides..."}
+                            </p>
+                          )}
+                        {data.waxingMarkSave.activityId === activity.id && data.waxingMarkSave.error && (
+                          <div id={`waxing-mark-error-${activity.id}`} className="text-sm text-rose-200" role="alert">
+                            <p>{data.waxingMarkSave.error}</p>
+                            {data.waxingMarkSave.canRetryRefresh && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  void data.retryWaxingRefresh();
+                                }}
+                                className="mt-1 min-h-10 rounded px-2 py-1 font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
+                              >
+                                Retry refresh
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </li>
                   ))}

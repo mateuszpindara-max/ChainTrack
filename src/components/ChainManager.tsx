@@ -422,7 +422,8 @@ export default function ChainManager({ initialChains, initialHasMore, initialLoa
                       {confirmDeleteId === chain.id ? (
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="mr-2 basis-full text-sm text-amber-200 sm:basis-auto">
-                            Deleting this chain cannot be undone.
+                            Deleting this chain cannot be undone. Rides covered by it will show no chain afterward; the
+                            marked ride will show Chain removed.
                           </p>
                           <button
                             type="button"
