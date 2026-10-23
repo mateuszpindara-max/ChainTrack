@@ -1,6 +1,11 @@
 ---
 import Welcome from "@/components/Welcome.astro";
 import Layout from "@/layouts/Layout.astro";
+
+if (Astro.locals.user) {
+  Astro.response.status = 302;
+  Astro.response.headers.set("Location", "/dashboard");
+}
 ---
 
 <Layout>

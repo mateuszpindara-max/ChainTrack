@@ -238,28 +238,28 @@ No database schema change is expected. Existing bike and activity data remain th
 
 #### Automated
 
-- [x] 2.1 Helper tests (`npm test`) cover dashboard selection/refresh state: summary, All bikes, selected bike, empty state, post-sync refresh, and stale-response handling.
-- [x] 2.2 Lint and type check pass: `npm run lint`, `npm run check`.
-- [x] 2.3 Existing chain management and Strava response/synchronization tests pass with the new dashboard props and state flow.
+- [x] 2.1 Helper tests (`npm test`) cover dashboard selection/refresh state: summary, All bikes, selected bike, empty state, post-sync refresh, and stale-response handling. — ad086fd
+- [x] 2.2 Lint and type check pass: `npm run lint`, `npm run check`. — ad086fd
+- [x] 2.3 Existing chain management and Strava response/synchronization tests pass with the new dashboard props and state flow. — ad086fd
 
 #### Manual
 
-- [x] 2.4 The default dashboard shows the yearly summary instead of a global activity list.
-- [x] 2.5 All bikes and selected-bike views show the expected activities; imported bikes without activities remain visible with an empty state.
-- [x] 2.6 Sidebar bike and chain sections are present, and chain navigation opens chain management.
-- [x] 2.7 Strava import, new sync and history repair retain feedback and refresh the bike list and summary after saving.
-- [x] 2.8 Desktop sidebar and mobile drawer are keyboard-operable and show loading, error, empty and status states clearly.
+- [x] 2.4 The default dashboard shows the yearly summary instead of a global activity list. — ad086fd
+- [x] 2.5 All bikes and selected-bike views show the expected activities; imported bikes without activities remain visible with an empty state. — ad086fd
+- [x] 2.6 Sidebar bike and chain sections are present, and chain navigation opens chain management. — ad086fd
+- [x] 2.7 Strava import, new sync and history repair retain feedback and refresh the bike list and summary after saving. — ad086fd
+- [x] 2.8 Desktop sidebar and mobile drawer are keyboard-operable and show loading, error, empty and status states clearly. — ad086fd
 
 ### Phase 3: Signed-in home routing and acceptance
 
 #### Automated
 
-- [ ] 3.1 Lint and type check pass: `npm run lint`, `npm run check`.
-- [ ] 3.2 Production build succeeds: `npm run build`.
-- [ ] 3.3 Smoke test passes and proves public-root and signed-in-root behavior: `npm run smoke`.
+- [x] 3.1 Lint and type check pass: `npm run lint`, `npm run check`.
+- [x] 3.2 Production build succeeds: `npm run build`.
+- [x] 3.3 Smoke test passes and proves public-root and signed-in-root behavior: `npm run smoke`.
 
 #### Manual
 
-- [ ] 3.4 Signed-in root redirects to dashboard; signed-out root remains public and protected dashboard redirects to sign-in.
-- [ ] 3.5 Import/synchronization updates dashboard bikes and summary without a full reload.
-- [ ] 3.6 Signed-in summary, bike selection, chain navigation, Strava actions and responsive sidebar work together end-to-end.
+- [x] 3.4 Signed-in root redirects to dashboard; signed-out root remains public and protected dashboard redirects to sign-in.
+- [x] 3.5 Import/synchronization updates dashboard bikes and summary without a full reload.
+- [x] 3.6 Signed-in summary, bike selection, chain navigation, Strava actions and responsive sidebar work together end-to-end.
