@@ -44,7 +44,7 @@ Właściciel wielu rowerów ma trudność z pamiętaniem, ile kilometrów przeje
 | S-01 | import-bike-linked-activities | importować i przeglądać nazwę, dystans, datę i rower aktywności | —             | FR-001, FR-002                        | done |
 | S-02 | refresh-activities-safely     | ręcznie importować nowe wpisy niezależnie od daty albo naprawiać całą historię; ukrywać niedopasowane i usuwać skasowane wraz z danymi zależnymi po pełnej weryfikacji, bez duplikatów | S-01          | FR-003                                | done |
 | S-03 | create-chain                  | tworzyć własny łańcuch                                          | —             | FR-004                                | done |
-| S-04 | assign-chain-and-mark-waxing  | przypisać łańcuch do aktywności, oznaczyć woskowanie i filtrować aktywności po łańcuchu | S-01, S-03    | US-01, FR-005, FR-006, FR-008, Access Control | proposed |
+| S-04 | assign-chain-and-mark-waxing  | przypisać łańcuch do aktywności, oznaczyć woskowanie i filtrować aktywności po łańcuchu | S-01, S-03    | US-01, FR-005, FR-006, FR-008, Access Control | in-progress |
 | S-05 | filter-activities             | filtrować aktywności po rowerze                                  | S-01          | FR-007                                | done |
 
 ## Streams
@@ -120,7 +120,7 @@ Brak osobnych fundamentów. Uwierzytelnianie i wdrożenie są już obecne; minim
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Błędne powiązanie łańcucha lub woskowania z aktywnością uniemożliwi wiarygodne śledzenie przebiegu.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-05: Filtrowanie aktywności po rowerze
 

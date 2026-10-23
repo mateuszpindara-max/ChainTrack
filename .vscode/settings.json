@@ -30,6 +30,12 @@
       "approve": true,
       "matchCommandLine": true
     },
-    "npm exec": true
+    "npm exec": true,
+    "printf": true,
+    "git remote": true,
+    "test": true,
+    "awk": true,
+    "git ls-remote": true,
+    "gh": true
   }
 }

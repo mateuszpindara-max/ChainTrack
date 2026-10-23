@@ -39,12 +39,13 @@ przebieg łańcuchów bez polegania wyłącznie na odczuciach podczas jazdy.
 ### Primary
 
 - Użytkownik loguje się, pobiera aktywności z przypisanym rowerem, przegląda je
-  od najnowszej do najstarszej, tworzy łańcuch i przypisuje go do aktywności.
+  od najnowszej do najstarszej, tworzy łańcuch i oznacza pierwszą aktywność,
+  podczas której używa go po woskowaniu.
 
 ### Secondary
 
-- Użytkownik może oznaczyć, że na końcu aktywności wykonano woskowanie, oraz
-  filtrować aktywności po rowerze lub łańcuchu.
+- Użytkownik może oznaczyć pierwszą aktywność na świeżo nawoskowanym łańcuchu
+  oraz filtrować aktywności po rowerze lub łańcuchu.
 
 ### Guardrails
 
@@ -52,17 +53,18 @@ przebieg łańcuchów bez polegania wyłącznie na odczuciach podczas jazdy.
 
 ## User Stories
 
-### US-01: Użytkownik przypisuje łańcuchy do aktywności
+### US-01: Użytkownik oznacza początek używania nawoskowanego łańcucha
 
 - **Given** zalogowany użytkownik ma pobrane aktywności przypisane do jego rowerów
-- **When** przegląda listę aktywności, przypisuje łańcuch do aktywności i oznacza woskowanie
-- **Then** widzi zapisane przypisanie łańcucha i informację o woskowaniu przy właściwej aktywności
+- **When** przegląda listę aktywności i wskazuje aktywność, która jako pierwsza używa nowo nawoskowanego łańcucha
+- **Then** widzi oznaczenie tej aktywności oraz ten łańcuch przy kolejnych aktywnościach tego samego roweru aż do następnego oznaczenia
 
 #### Acceptance Criteria
 
 - Lista pokazuje aktywności użytkownika od najnowszej do najstarszej.
 - Aktywność zawiera nazwę, długość, datę i przypisany rower.
-- Użytkownik może przypisać łańcuch do aktywności i oznaczyć wykonane woskowanie.
+- Użytkownik może wskazać łańcuch przy pierwszej aktywności po woskowaniu; łańcuch jest uwzględniany przy kolejnych aktywnościach tego samego roweru do następnego oznaczenia.
+- Oznaczenie woskowania jest widoczne przy aktywności, która jako pierwsza używa świeżo nawoskowanego łańcucha.
 - Ponowna synchronizacja nie tworzy duplikatów aktywności.
 
 ## Functional Requirements
@@ -80,14 +82,14 @@ przebieg łańcuchów bez polegania wyłącznie na odczuciach podczas jazdy.
 
 - FR-004: Użytkownik może utworzyć łańcuch. Priority: must-have
   > Socrates: Rozważono użycie jednego domyślnego łańcucha bez tworzenia go przez użytkownika. Pozostaje w MVP, ponieważ aplikacja ma śledzić osobne łańcuchy.
-- FR-005: Użytkownik może przypisać łańcuch do aktywności. Priority: must-have
-  > Socrates: Rozważono pracochłonność ręcznego przypisywania każdej aktywności. Pozostaje w MVP, ponieważ ręczne przypisanie jest nową uzgodnioną logiką śledzenia.
-- FR-006: Użytkownik może oznaczyć, że na końcu aktywności wykonano woskowanie. Priority: must-have
-  > Socrates: Rozważono rejestrowanie woskowania w osobnym miejscu oraz fakt, że oznaczenie nie jest potrzebne do samego importu. Pozostaje w MVP, ponieważ woskowanie ma być powiązane z aktywnością.
+- FR-005: Użytkownik może wskazać łańcuch przy aktywności, która jako pierwsza używa go po woskowaniu; ten łańcuch jest uwzględniany przy kolejnych aktywnościach tego samego roweru aż do następnego oznaczenia. Priority: must-have
+  > Socrates: Rozważono ręczne przypisywanie łańcucha do każdej aktywności. Użytkownik wskazuje łańcuch raz na początku cyklu woskowania, co ogranicza powtarzalne czynności i zachowuje powiązanie z aktywnością.
+- FR-006: Użytkownik może oznaczyć aktywność jako pierwszą, podczas której używa nowo nawoskowanego łańcucha. Priority: must-have
+  > Socrates: Rozważono rejestrowanie woskowania poza listą aktywności. Oznaczenie pierwszej jazdy wiąże początek używania świeżo nawoskowanego łańcucha z właściwą aktywnością.
 - FR-007: Użytkownik może filtrować aktywności po rowerze. Priority: must-have
   > Socrates: Rozważono ograniczenie widoku do jednego roweru bez osobnego filtra. Pozostaje w MVP, ponieważ użytkownik ma wiele rowerów.
 - FR-008: Użytkownik może filtrować aktywności po łańcuchu. Priority: must-have
-  > Socrates: Rozważono odłożenie filtra do czasu dodania metryk łańcucha. Pozostaje w MVP, ponieważ filtrowanie ma wspierać ręczne przypisywanie aktywności.
+  > Socrates: Rozważono odłożenie filtra do czasu dodania metryk łańcucha. Pozostaje w MVP, ponieważ filtrowanie wspiera sprawdzanie i korygowanie oznaczeń cykli woskowania.
 
 ## Non-Functional Requirements
 
@@ -98,11 +100,9 @@ przebieg łańcuchów bez polegania wyłącznie na odczuciach podczas jazdy.
 
 ## Business Logic
 
-Aplikacja wylicza średni przebieg łańcucha między woskowaniami.
+Użytkownik oznacza aktywność, która jako pierwsza używa nowo nawoskowanego łańcucha, a ten łańcuch obowiązuje kolejne aktywności tego samego roweru aż do następnego oznaczenia.
 
-Użytkownik wskazuje, który łańcuch był używany w aktywności i przy której
-aktywności wykonano woskowanie. Aplikacja pokazuje, ile kilometrów minęło od
-ostatniego woskowania, aby użytkownik mógł oszacować termin kolejnego.
+Oznaczenie dotyczy początku używania świeżo nawoskowanego łańcucha, a nie czynności wykonanej na końcu oznaczonej aktywności. Metryki przebiegu między woskowaniami pozostają poza zakresem MVP.
 
 ## Access Control
 
@@ -113,8 +113,9 @@ nie są częścią MVP.
 
 ## Non-Goals
 
-- MVP nie będzie automatycznie przypisywać łańcucha do aktywności; użytkownik
-  przypisuje go ręcznie.
+- MVP nie będzie automatycznie rozpoznawać, kiedy łańcuch został nawoskowany;
+  użytkownik ręcznie oznacza pierwszą aktywność nowego cyklu, a łańcuch jest
+  uwzględniany przy kolejnych aktywnościach tego samego roweru.
 - MVP nie będzie jeszcze pokazywać metryk łańcucha: liczby woskowań, średniego
   przebiegu i bieżącego przebiegu.
 - MVP nie będzie synchronizować aktywności w tle; aktualizacja jest uruchamiana
