@@ -44,8 +44,8 @@ Właściciel wielu rowerów ma trudność z pamiętaniem, ile kilometrów przeje
 | S-01 | import-bike-linked-activities | importować i przeglądać nazwę, dystans, datę i rower aktywności | —             | FR-001, FR-002                        | done |
 | S-02 | refresh-activities-safely     | ręcznie importować nowe wpisy niezależnie od daty albo naprawiać całą historię; ukrywać niedopasowane i usuwać skasowane wraz z danymi zależnymi po pełnej weryfikacji, bez duplikatów | S-01          | FR-003                                | done |
 | S-03 | create-chain                  | tworzyć własny łańcuch                                          | —             | FR-004                                | done |
-| S-04 | assign-chain-and-mark-waxing  | przypisać łańcuch do aktywności i oznaczyć woskowanie           | S-01, S-03    | US-01, FR-005, FR-006, Access Control | proposed |
-| S-05 | filter-activities             | filtrować aktywności po rowerze i łańcuchu                      | S-01, S-04    | FR-007, FR-008                        | proposed |
+| S-04 | assign-chain-and-mark-waxing  | przypisać łańcuch do aktywności, oznaczyć woskowanie i filtrować aktywności po łańcuchu | S-01, S-03    | US-01, FR-005, FR-006, FR-008, Access Control | proposed |
+| S-05 | filter-activities             | filtrować aktywności po rowerze                                  | S-01          | FR-007                                | in-progress |
 
 ## Streams
 
@@ -110,11 +110,11 @@ Brak osobnych fundamentów. Uwierzytelnianie i wdrożenie są już obecne; minim
 - **Risk:** To niezależny, niewielki krok, który odblokowuje przypisywanie bez czekania na zakończenie importu.
 - **Status:** done
 
-### S-04: Przypisanie łańcucha i oznaczenie woskowania
+### S-04: Przypisanie łańcucha, oznaczenie woskowania i filtrowanie po łańcuchu
 
-- **Outcome:** Użytkownik może przypisać utworzony łańcuch do aktywności i zapisać, że na jej końcu wykonał woskowanie.
+- **Outcome:** Użytkownik może przypisać utworzony łańcuch do aktywności, zapisać, że na jej końcu wykonał woskowanie, oraz filtrować aktywności po łańcuchu.
 - **Change ID:** `assign-chain-and-mark-waxing`
-- **PRD refs:** US-01, FR-005, FR-006, Access Control
+- **PRD refs:** US-01, FR-005, FR-006, FR-008, Access Control
 - **Prerequisites:** S-01, S-03
 - **Parallel with:** S-02
 - **Blockers:** —
@@ -122,17 +122,17 @@ Brak osobnych fundamentów. Uwierzytelnianie i wdrożenie są już obecne; minim
 - **Risk:** Błędne powiązanie łańcucha lub woskowania z aktywnością uniemożliwi wiarygodne śledzenie przebiegu.
 - **Status:** proposed
 
-### S-05: Filtrowanie aktywności
+### S-05: Filtrowanie aktywności po rowerze
 
-- **Outcome:** Użytkownik może zawęzić listę aktywności do wybranego roweru lub łańcucha.
+- **Outcome:** Użytkownik może zawęzić listę aktywności do wybranego roweru i zobaczyć podsumowanie jazdy w bieżącym roku.
 - **Change ID:** `filter-activities`
-- **PRD refs:** FR-007, FR-008
-- **Prerequisites:** S-01, S-04
+- **PRD refs:** FR-007
+- **Prerequisites:** S-01
 - **Parallel with:** S-02
 - **Blockers:** —
 - **Unknowns:** —
-- **Risk:** Filtry muszą uwzględniać zapisane przypisania, aby nie ukrywać aktywności w sposób mylący.
-- **Status:** proposed
+- **Risk:** Filtr i podsumowanie muszą uwzględniać aktywności przypisane do roweru oraz granice bieżącego lokalnego roku.
+- **Status:** in-progress
 
 ## Backlog Handoff
 
@@ -141,8 +141,8 @@ Brak osobnych fundamentów. Uwierzytelnianie i wdrożenie są już obecne; minim
 | S-01       | `import-bike-linked-activities` | Import and browse bike-linked activities | no                    | Confirm Strava access and application data. |
 | S-02       | `refresh-activities-safely`     | Refresh activities without duplicates    | no                    | Requires S-01.                              |
 | S-03       | `create-chain`                  | Create a chain                           | yes                   | Run `/10x-plan create-chain`.               |
-| S-04       | `assign-chain-and-mark-waxing`  | Assign chains and record waxing          | no                    | Requires S-01 and S-03.                     |
-| S-05       | `filter-activities`             | Filter activities by bike and chain      | no                    | Requires S-01 and S-04.                     |
+| S-04       | `assign-chain-and-mark-waxing`  | Assign chains, record waxing, and filter by chain | no                    | Requires S-01 and S-03.                     |
+| S-05       | `filter-activities`             | Filter activities by bike                 | no                    | Year overview and bike navigation are being planned; chain filtering belongs to S-04. |
 
 ## Open Roadmap Questions
 
