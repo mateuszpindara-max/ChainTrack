@@ -41,6 +41,7 @@ function isImportResponse(value: unknown): value is ImportResponse {
     typeof response.inserted === "number" &&
     typeof response.updated === "number" &&
     typeof response.skipped === "number" &&
+    (response.savedChanges === undefined || typeof response.savedChanges === "boolean") &&
     (response.removed === undefined || typeof response.removed === "number") &&
     (response.mode === undefined || response.mode === "new" || response.mode === "repair") &&
     (response.runId === undefined || typeof response.runId === "string") &&
@@ -120,7 +121,10 @@ export default function ActivityDashboard({
       const response = await fetch("/api/strava/import", { method: "POST" });
       const payload: unknown = await response.json();
       if (!isImportResponse(payload)) throw new Error("The activity import returned an invalid response.");
-      if (!response.ok) throw new Error(payload.message ?? "The activity import could not be started.");
+      if (!response.ok) {
+        if (payload.savedChanges) data.refreshAfterSavedChanges(payload);
+        throw new Error(payload.message ?? "The activity import could not be started.");
+      }
       setResult(payload);
       data.refreshAfterSavedChanges(payload);
       if (payload.outcome === "complete") {

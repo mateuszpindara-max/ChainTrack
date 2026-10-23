@@ -28,6 +28,7 @@ export interface InitialImportResponse {
   inserted: number;
   updated: number;
   skipped: number;
+  savedChanges?: boolean;
   message?: string;
   activities?: ActivityView[];
   hasMoreActivities?: boolean;

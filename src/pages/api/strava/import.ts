@@ -14,8 +14,8 @@ import type { StravaSyncDatabase } from "@/lib/strava/sync-database.ts";
 
 export const prerender = false;
 
-function failure(message: string, status: number): Response {
-  return Response.json({ outcome: "failed", inserted: 0, updated: 0, skipped: 0, message }, { status });
+function failure(message: string, status: number, savedChanges = false): Response {
+  return Response.json({ outcome: "failed", inserted: 0, updated: 0, skipped: 0, savedChanges, message }, { status });
 }
 
 function isStringArray(value: unknown): value is string[] {
@@ -144,10 +144,10 @@ export const POST: APIRoute = async (context) => {
       .select("user_id")
       .maybeSingle();
     if (progressError) {
-      return failure("History was imported, but progress could not be saved. Retry safely.", 503);
+      return failure("History was imported, but progress could not be saved. Retry safely.", 503, true);
     }
     if (!savedProgress) {
-      return failure("Another import request advanced history. Continue the import again.", 409);
+      return failure("Another import request advanced history. Continue the import again.", 409, true);
     }
   }
 
@@ -163,7 +163,7 @@ export const POST: APIRoute = async (context) => {
       supabase.from("bikes").select("id, name").eq("user_id", user.id),
     ]);
     if (activityError || bikeError) {
-      return failure("Import results were saved, but the activity list could not be loaded.", 503);
+      return failure("Import results were saved, but the activity list could not be loaded.", 503, true);
     }
 
     return Response.json({
@@ -172,6 +172,6 @@ export const POST: APIRoute = async (context) => {
       hasMoreActivities: activityRows.length > 100,
     });
   } catch {
-    return failure("Import results were saved, but the activity list could not be loaded.", 503);
+    return failure("Import results were saved, but the activity list could not be loaded.", 503, true);
   }
 };

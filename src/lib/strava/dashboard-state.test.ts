@@ -67,6 +67,15 @@ void test("saved import and synchronization changes refresh the selected activit
   assert.equal(state.refreshGeneration, 2);
 });
 
+void test("failed import responses refresh when the server reports saved changes", () => {
+  const state = dashboardStateReducer(createDashboardState(), {
+    type: "refresh-after-save",
+    result: { outcome: "failed", inserted: 0, updated: 0, savedChanges: true },
+  });
+
+  assert.equal(state.refreshGeneration, 1);
+});
+
 void test("unchanged failed operations do not refresh and stale activity responses are discarded", () => {
   const selectedBike = dashboardStateReducer(createDashboardState(), { type: "select-bike", bikeId: "bike-1" });
   const staleKey = getDashboardRequestKey(selectedBike);

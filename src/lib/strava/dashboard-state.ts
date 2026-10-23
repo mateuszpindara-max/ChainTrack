@@ -25,6 +25,7 @@ export interface SavedChangesResult {
   inserted: number;
   updated: number;
   removed?: number;
+  savedChanges?: boolean;
 }
 
 export type DashboardStateAction =
@@ -96,7 +97,9 @@ export function dashboardStateReducer(state: DashboardState, action: DashboardSt
       if (state.selection.kind === "activities" && state.selection.bikeId === action.bikeId) return state;
       return resetActivityPage({ ...state, selection: { kind: "activities", bikeId: action.bikeId } }, "loading");
     case "refresh-after-save": {
-      const savedChanges = action.result.inserted + action.result.updated + (action.result.removed ?? 0) > 0;
+      const savedChanges =
+        action.result.savedChanges === true ||
+        action.result.inserted + action.result.updated + (action.result.removed ?? 0) > 0;
       if (!savedChanges && action.result.outcome !== "complete") return state;
       const nextState = resetActivityPage(state, state.selection.kind === "summary" ? "idle" : "loading");
       return { ...nextState, refreshGeneration: state.refreshGeneration + 1 };

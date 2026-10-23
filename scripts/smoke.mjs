@@ -32,11 +32,12 @@ async function request(path, { method = "GET", form } = {}) {
     body: form ? new URLSearchParams(form).toString() : undefined,
   });
   storeCookies(response);
-  return { status: response.status, location: response.headers.get("location") ?? "" };
+  const body = await response.text();
+  return { status: response.status, location: response.headers.get("location") ?? "", body };
 }
 
 const steps = [
-  ["signed-out home renders", () => request("/"), { status: 200 }],
+  ["signed-out home renders", () => request("/"), { status: 200, bodyIncludes: "10x Astro Starter" }],
   ["dashboard redirects anonymous user", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
   [
     "signup creates account",
@@ -54,7 +55,7 @@ const steps = [
     { status: 302, location: "/dashboard" },
   ],
   ["signed-in home redirects to dashboard", () => request("/"), { status: 302, location: "/dashboard" }],
-  ["dashboard renders for signed-in user", () => request("/dashboard"), { status: 200 }],
+  ["dashboard renders for signed-in user", () => request("/dashboard"), { status: 200, bodyIncludes: "Your rides" }],
   ["signout clears session", () => request("/api/auth/signout", { method: "POST" }), { status: 302, location: "/" }],
   ["dashboard redirects after signout", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
 ];
@@ -64,7 +65,8 @@ for (const [name, run, expected] of steps) {
   const actual = await run();
   const ok =
     actual.status === expected.status &&
-    (expected.location === undefined || actual.location.startsWith(expected.location));
+    (expected.location === undefined || actual.location.startsWith(expected.location)) &&
+    (expected.bodyIncludes === undefined || actual.body.includes(expected.bodyIncludes));
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}  -> ${actual.status} ${actual.location}`);
   if (!ok) {
     failed++;
