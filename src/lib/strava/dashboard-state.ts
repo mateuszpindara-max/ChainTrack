@@ -1,6 +1,8 @@
 import type { ActivityView } from "./activity-view.ts";
 
-export type DashboardSelection = { kind: "summary" } | { kind: "activities"; bikeId: string | null };
+export type DashboardChainFilter = string | null;
+export type DashboardSelection =
+  { kind: "summary" } | { kind: "activities"; bikeId: string | null; chainId: DashboardChainFilter };
 
 export type DashboardViewState = "summary" | "loading" | "error" | "empty" | "activities";
 
@@ -32,6 +34,7 @@ export type DashboardStateAction =
   | { type: "select-summary" }
   | { type: "select-all-bikes" }
   | { type: "select-bike"; bikeId: string }
+  | { type: "select-chain-filter"; filter: DashboardChainFilter }
   | { type: "refresh-after-save"; result: SavedChangesResult }
   | { type: "activities-loading"; key: DashboardRequestKey }
   | { type: "activities-loaded"; key: DashboardRequestKey; activities: ActivityView[]; hasMore: boolean }
@@ -41,7 +44,9 @@ export type DashboardStateAction =
   | { type: "load-more-error"; key: DashboardRequestKey; message: string };
 
 function selectionKey(selection: DashboardSelection): string {
-  return selection.kind === "summary" ? "summary" : `activities:${selection.bikeId ?? "all"}`;
+  return selection.kind === "summary"
+    ? "summary"
+    : `activities:${selection.bikeId ?? "all"}:chain:${selection.chainId ?? "any"}`;
 }
 
 function resetActivityPage(state: DashboardState, activityStatus: DashboardState["activityStatus"]): DashboardState {
@@ -91,11 +96,36 @@ export function dashboardStateReducer(state: DashboardState, action: DashboardSt
       if (state.selection.kind === "summary") return state;
       return resetActivityPage({ ...state, selection: { kind: "summary" } }, "idle");
     case "select-all-bikes":
-      if (state.selection.kind === "activities" && state.selection.bikeId === null) return state;
-      return resetActivityPage({ ...state, selection: { kind: "activities", bikeId: null } }, "loading");
+      if (
+        state.selection.kind === "activities" &&
+        state.selection.bikeId === null &&
+        state.selection.chainId === null
+      ) {
+        return state;
+      }
+      return resetActivityPage({ ...state, selection: { kind: "activities", bikeId: null, chainId: null } }, "loading");
     case "select-bike":
-      if (state.selection.kind === "activities" && state.selection.bikeId === action.bikeId) return state;
-      return resetActivityPage({ ...state, selection: { kind: "activities", bikeId: action.bikeId } }, "loading");
+      if (
+        state.selection.kind === "activities" &&
+        state.selection.bikeId === action.bikeId &&
+        state.selection.chainId === null
+      ) {
+        return state;
+      }
+      return resetActivityPage(
+        { ...state, selection: { kind: "activities", bikeId: action.bikeId, chainId: null } },
+        "loading",
+      );
+    case "select-chain-filter":
+      if (state.selection.kind !== "activities" || state.selection.bikeId === null) return state;
+      if (state.selection.chainId === action.filter) return state;
+      return resetActivityPage(
+        {
+          ...state,
+          selection: { ...state.selection, chainId: action.filter },
+        },
+        "loading",
+      );
     case "refresh-after-save": {
       const savedChanges =
         action.result.savedChanges === true ||

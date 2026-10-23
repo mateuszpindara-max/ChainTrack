@@ -375,21 +375,21 @@ The migration is additive: one new table, one view, one new unique constraint on
 
 #### Automated
 
-- [x] 2.1 Unit tests pass: `npm test`
-- [x] 2.2 Type checking passes: `npm run check`
-- [x] 2.3 Linting passes: `npm run lint`
+- [x] 2.1 Unit tests pass: `npm test` — 81e49b6
+- [x] 2.2 Type checking passes: `npm run check` — 81e49b6
+- [x] 2.3 Linting passes: `npm run lint` — 81e49b6
 
 #### Manual
 
-- [x] 2.4 With the local stack running and a signed-in session, a PUT to the waxing route saves and clears a mark, and a bike-filtered activities request returns the derived chain fields.
+- [x] 2.4 With the local stack running and a signed-in session, a PUT to the waxing route saves and clears a mark, and a bike-filtered activities request returns the derived chain fields. — 81e49b6
 
 ### Phase 3: Dashboard state and data hook
 
 #### Automated
 
-- [ ] 3.1 State and request-building tests pass: `npm test`
-- [ ] 3.2 Type checking passes after the hook changes: `npm run check`
-- [ ] 3.3 Linting passes after the hook changes: `npm run lint`
+- [x] 3.1 State and request-building tests pass: `npm test`
+- [x] 3.2 Type checking passes after the hook changes: `npm run check`
+- [x] 3.3 Linting passes after the hook changes: `npm run lint`
 
 ### Phase 4: Dashboard UI and acceptance
 

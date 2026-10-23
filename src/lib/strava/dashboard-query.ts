@@ -1,4 +1,5 @@
 import { toActivityViews, type ActivityRow, type ActivityView, type BikeRow } from "./activity-view.ts";
+import type { DashboardSelection } from "./dashboard-state.ts";
 
 export const DASHBOARD_PAGE_SIZE = 100;
 export const MAX_DASHBOARD_PAGE_SIZE = 500;
@@ -10,6 +11,22 @@ export type ParsedBikeFilter = { success: true; bikeId: string | null } | { succ
 export type ActivityChainFilter = string | null;
 export type ParsedChainFilter = { success: true; chainId: ActivityChainFilter } | { success: false };
 export type ParsedActivityLimit = { success: true; limit: number } | { success: false };
+
+export function buildActivityQueryString(
+  selection: Extract<DashboardSelection, { kind: "activities" }>,
+  offset: number,
+  limit?: number,
+): string {
+  const params = new URLSearchParams({ offset: String(offset) });
+  if (selection.bikeId !== null) params.set("bikeId", selection.bikeId);
+  if (selection.chainId !== null) params.set("chainId", selection.chainId);
+  if (limit !== undefined) params.set("limit", String(limit));
+  return params.toString();
+}
+
+export function getActivityRefreshLimit(loadedRowCount: number): number {
+  return Math.min(MAX_DASHBOARD_PAGE_SIZE, Math.max(DASHBOARD_PAGE_SIZE, loadedRowCount));
+}
 
 export interface DashboardActivityStore {
   readActivities(input: {

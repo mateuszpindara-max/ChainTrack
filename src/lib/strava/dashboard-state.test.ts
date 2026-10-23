@@ -24,13 +24,34 @@ void test("dashboard starts on the summary and transitions between All bikes and
   assert.equal(getDashboardViewState(summary), "summary");
 
   const allBikes = dashboardStateReducer(summary, { type: "select-all-bikes" });
-  assert.deepEqual(allBikes.selection, { kind: "activities", bikeId: null });
+  assert.deepEqual(allBikes.selection, { kind: "activities", bikeId: null, chainId: null });
   assert.equal(getDashboardViewState(allBikes), "loading");
 
   const selectedBike = dashboardStateReducer(allBikes, { type: "select-bike", bikeId: "bike-1" });
-  assert.deepEqual(selectedBike.selection, { kind: "activities", bikeId: "bike-1" });
+  assert.deepEqual(selectedBike.selection, { kind: "activities", bikeId: "bike-1", chainId: null });
   assert.deepEqual(selectedBike.activities, []);
-  assert.equal(getDashboardRequestKey(selectedBike).selection, "activities:bike-1");
+  assert.equal(getDashboardRequestKey(selectedBike).selection, "activities:bike-1:chain:any");
+});
+
+void test("chain filters require a bike, reset on bike changes, and distinguish request keys", () => {
+  const allBikes = dashboardStateReducer(createDashboardState(), { type: "select-all-bikes" });
+  const ignoredFilter = dashboardStateReducer(allBikes, { type: "select-chain-filter", filter: "none" });
+  assert.equal(ignoredFilter, allBikes);
+
+  let state = dashboardStateReducer(allBikes, { type: "select-bike", bikeId: "bike-1" });
+  const anyChainKey = getDashboardRequestKey(state).selection;
+  state = dashboardStateReducer(state, { type: "select-chain-filter", filter: "none" });
+  const noChainKey = getDashboardRequestKey(state).selection;
+  assert.deepEqual(state.selection, { kind: "activities", bikeId: "bike-1", chainId: "none" });
+  assert.notEqual(noChainKey, anyChainKey);
+
+  state = dashboardStateReducer(state, { type: "select-chain-filter", filter: "chain-1" });
+  const specificChainKey = getDashboardRequestKey(state).selection;
+  assert.notEqual(specificChainKey, noChainKey);
+
+  state = dashboardStateReducer(state, { type: "select-bike", bikeId: "bike-2" });
+  assert.deepEqual(state.selection, { kind: "activities", bikeId: "bike-2", chainId: null });
+  assert.notEqual(getDashboardRequestKey(state).selection, anyChainKey);
 });
 
 void test("a selected bike with a loaded empty page has an empty state", () => {
@@ -97,4 +118,22 @@ void test("unchanged failed operations do not refresh and stale activity respons
   assert.equal(unchanged.refreshGeneration, 0);
   assert.equal(afterStaleResponse, unchanged);
   assert.deepEqual(afterStaleResponse.activities, []);
+});
+
+void test("responses for an old chain filter are discarded", () => {
+  let state = dashboardStateReducer(createDashboardState(), { type: "select-bike", bikeId: "bike-1" });
+  state = dashboardStateReducer(state, { type: "select-chain-filter", filter: "chain-1" });
+  const staleKey = getDashboardRequestKey(state);
+  state = dashboardStateReducer(state, { type: "select-chain-filter", filter: "chain-2" });
+  const currentState = state;
+
+  state = dashboardStateReducer(state, {
+    type: "activities-loaded",
+    key: staleKey,
+    activities: [firstActivity],
+    hasMore: false,
+  });
+
+  assert.equal(state, currentState);
+  assert.deepEqual(state.activities, []);
 });

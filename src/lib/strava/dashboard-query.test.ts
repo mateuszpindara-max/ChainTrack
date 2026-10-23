@@ -4,8 +4,10 @@ import type { ActivityRow, BikeRow } from "./activity-view.ts";
 import {
   DASHBOARD_PAGE_SIZE,
   MAX_DASHBOARD_PAGE_SIZE,
+  buildActivityQueryString,
   getActivityPage,
   getBikePage,
+  getActivityRefreshLimit,
   parseActivityBikeFilter,
   parseActivityChainFilter,
   parseActivityLimit,
@@ -16,6 +18,31 @@ import {
 
 const bikeA = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const bikeB = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+
+void test("builds activity query strings for all-bike, bike, and chain-filter selections", () => {
+  assert.equal(buildActivityQueryString({ kind: "activities", bikeId: null, chainId: null }, 0), "offset=0");
+  assert.equal(
+    buildActivityQueryString({ kind: "activities", bikeId: bikeA, chainId: null }, 25),
+    `offset=25&bikeId=${bikeA}`,
+  );
+  assert.equal(
+    buildActivityQueryString({ kind: "activities", bikeId: bikeA, chainId: "none" }, 0),
+    `offset=0&bikeId=${bikeA}&chainId=none`,
+  );
+  assert.equal(
+    buildActivityQueryString({ kind: "activities", bikeId: bikeA, chainId: bikeB }, 100, 250),
+    `offset=100&bikeId=${bikeA}&chainId=${bikeB}&limit=250`,
+  );
+});
+
+void test("sizes activity refreshes to at least one page and no more than the cap", () => {
+  assert.equal(getActivityRefreshLimit(0), DASHBOARD_PAGE_SIZE);
+  assert.equal(getActivityRefreshLimit(DASHBOARD_PAGE_SIZE - 1), DASHBOARD_PAGE_SIZE);
+  assert.equal(getActivityRefreshLimit(DASHBOARD_PAGE_SIZE), DASHBOARD_PAGE_SIZE);
+  assert.equal(getActivityRefreshLimit(DASHBOARD_PAGE_SIZE + 1), DASHBOARD_PAGE_SIZE + 1);
+  assert.equal(getActivityRefreshLimit(MAX_DASHBOARD_PAGE_SIZE), MAX_DASHBOARD_PAGE_SIZE);
+  assert.equal(getActivityRefreshLimit(MAX_DASHBOARD_PAGE_SIZE + 1), MAX_DASHBOARD_PAGE_SIZE);
+});
 
 class MemoryDashboardStore implements DashboardActivityStore, DashboardBikeStore {
   bikes: (BikeRow & { userId: string })[] = [];

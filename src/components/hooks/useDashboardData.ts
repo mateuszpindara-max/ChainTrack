@@ -8,8 +8,10 @@ import {
   getDashboardRequestKey,
   isCurrentDashboardRequest,
   type DashboardStateAction,
+  type DashboardSelection,
   type SavedChangesResult,
 } from "@/lib/strava/dashboard-state.ts";
+import { buildActivityQueryString, getActivityRefreshLimit } from "@/lib/strava/dashboard-query.ts";
 
 interface Page<T> {
   items: T[];
@@ -30,6 +32,22 @@ interface DataSection<T> extends Page<T> {
   error: string | null;
   loadingMore: boolean;
   loadMoreError: string | null;
+}
+
+type ActivitySelection = Extract<DashboardSelection, { kind: "activities" }>;
+
+interface WaxingRefreshContext {
+  activityId: string;
+  key: ReturnType<typeof getDashboardRequestKey>;
+  selection: ActivitySelection;
+  limit: number;
+}
+
+interface WaxingMarkSaveState {
+  activityId: string | null;
+  phase: "idle" | "saving" | "refreshing" | "error";
+  error: string | null;
+  canRetryRefresh: boolean;
 }
 
 function isPage(
@@ -75,7 +93,10 @@ function isActivityPage(value: unknown): value is { activities: ActivityView[]; 
         typeof item.name === "string" &&
         typeof item.distanceMeters === "number" &&
         typeof item.startedAt === "string" &&
-        typeof item.bikeName === "string"
+        typeof item.bikeName === "string" &&
+        (item.chainId === null || typeof item.chainId === "string") &&
+        (item.chainName === null || typeof item.chainName === "string") &&
+        typeof item.isWaxingStart === "boolean"
       );
     }) &&
     typeof page.hasMore === "boolean"
@@ -142,6 +163,14 @@ export function useDashboardData(options: DashboardDataOptions) {
   const [summaryRetry, setSummaryRetry] = useState(0);
   const [bikesRetry, setBikesRetry] = useState(0);
   const [chainsRetry, setChainsRetry] = useState(0);
+  const [waxingMarkSave, setWaxingMarkSave] = useState<WaxingMarkSaveState>({
+    activityId: null,
+    phase: "idle",
+    error: null,
+    canRetryRefresh: false,
+  });
+  const waxingOperationRef = useRef(false);
+  const waxingRefreshContextRef = useRef<WaxingRefreshContext | null>(null);
   const requestKey = getDashboardRequestKey(dashboard);
 
   function sendAction(action: DashboardStateAction) {
@@ -151,8 +180,8 @@ export function useDashboardData(options: DashboardDataOptions) {
 
   const selectionKey = requestKey.selection;
   const refreshGeneration = requestKey.refreshGeneration;
-  const activityBikeId = dashboard.selection.kind === "activities" ? dashboard.selection.bikeId : null;
-  const hasActivitySelection = dashboard.selection.kind === "activities";
+  const activitySelection = dashboard.selection.kind === "activities" ? dashboard.selection : null;
+  const hasActivitySelection = activitySelection !== null;
 
   useEffect(() => {
     const interval = getLocalYearInterval();
@@ -191,15 +220,15 @@ export function useDashboardData(options: DashboardDataOptions) {
 
   useEffect(() => {
     const key = { selection: selectionKey, refreshGeneration };
-    if (!hasActivitySelection) return;
+    if (!activitySelection) return;
     const controller = new AbortController();
     sendAction({ type: "activities-loading", key });
     void (async () => {
       try {
-        const params = new URLSearchParams({ offset: "0" });
-        if (activityBikeId) params.set("bikeId", activityBikeId);
         const payload = await readPayload(
-          await fetch(`/api/strava/activities?${params}`, { signal: controller.signal }),
+          await fetch(`/api/strava/activities?${buildActivityQueryString(activitySelection, 0)}`, {
+            signal: controller.signal,
+          }),
           "Activities could not be loaded.",
         );
         if (!isActivityPage(payload)) throw new Error("The activity page returned an invalid response.");
@@ -219,7 +248,7 @@ export function useDashboardData(options: DashboardDataOptions) {
     return () => {
       controller.abort();
     };
-  }, [selectionKey, refreshGeneration, activityBikeId, hasActivitySelection, activityRetry]);
+  }, [selectionKey, refreshGeneration, activitySelection, hasActivitySelection, activityRetry]);
 
   useEffect(() => {
     if (refreshGeneration === 0 && bikesRetry === 0 && !bikesRef.current.hasMore) return;
@@ -389,10 +418,8 @@ export function useDashboardData(options: DashboardDataOptions) {
     const currentSelection = currentState.selection;
     sendAction({ type: "load-more-started", key });
     try {
-      const params = new URLSearchParams({ offset: String(offset) });
-      if (currentSelection.bikeId) params.set("bikeId", currentSelection.bikeId);
       const payload = await readPayload(
-        await fetch(`/api/strava/activities?${params}`),
+        await fetch(`/api/strava/activities?${buildActivityQueryString(currentSelection, offset)}`),
         "More activities could not be loaded.",
       );
       if (!isActivityPage(payload)) throw new Error("The activity page returned an invalid response.");
@@ -404,6 +431,83 @@ export function useDashboardData(options: DashboardDataOptions) {
         message: error instanceof Error ? error.message : "More activities could not be loaded.",
       });
     }
+  }
+
+  async function refreshWaxingActivities(context: WaxingRefreshContext) {
+    setWaxingMarkSave({
+      activityId: context.activityId,
+      phase: "refreshing",
+      error: null,
+      canRetryRefresh: false,
+    });
+    try {
+      const payload = await readPayload(
+        await fetch(`/api/strava/activities?${buildActivityQueryString(context.selection, 0, context.limit)}`),
+        "The activity list could not be refreshed.",
+      );
+      if (!isActivityPage(payload)) throw new Error("The activity page returned an invalid response.");
+      sendAction({
+        type: "activities-loaded",
+        key: context.key,
+        activities: payload.activities,
+        hasMore: payload.hasMore,
+      });
+      waxingRefreshContextRef.current = null;
+      setWaxingMarkSave({ activityId: null, phase: "idle", error: null, canRetryRefresh: false });
+    } catch {
+      waxingRefreshContextRef.current = context;
+      setWaxingMarkSave({
+        activityId: context.activityId,
+        phase: "error",
+        error: "Saved, but the list could not be refreshed.",
+        canRetryRefresh: true,
+      });
+    } finally {
+      waxingOperationRef.current = false;
+    }
+  }
+
+  async function saveWaxingMark(activityId: string, chainId: string | null) {
+    if (waxingOperationRef.current) return;
+    const currentState = stateRef.current;
+    if (currentState.selection.kind !== "activities") return;
+
+    const context: WaxingRefreshContext = {
+      activityId,
+      key: getDashboardRequestKey(currentState),
+      selection: currentState.selection,
+      limit: getActivityRefreshLimit(currentState.activities.length),
+    };
+    waxingOperationRef.current = true;
+    waxingRefreshContextRef.current = null;
+    setWaxingMarkSave({ activityId, phase: "saving", error: null, canRetryRefresh: false });
+    try {
+      await readPayload(
+        await fetch(`/api/strava/activities/${encodeURIComponent(activityId)}/waxing`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chainId }),
+        }),
+        "The waxing mark could not be saved.",
+      );
+    } catch (error) {
+      waxingOperationRef.current = false;
+      setWaxingMarkSave({
+        activityId,
+        phase: "error",
+        error: error instanceof Error ? error.message : "The waxing mark could not be saved.",
+        canRetryRefresh: false,
+      });
+      return;
+    }
+    await refreshWaxingActivities(context);
+  }
+
+  async function retryWaxingRefresh() {
+    const context = waxingRefreshContextRef.current;
+    if (!context || waxingOperationRef.current) return;
+    waxingOperationRef.current = true;
+    await refreshWaxingActivities(context);
   }
 
   function refreshAfterSavedChanges(result: SavedChangesResult) {
@@ -425,6 +529,9 @@ export function useDashboardData(options: DashboardDataOptions) {
     selectBike: (bikeId: string) => {
       sendAction({ type: "select-bike", bikeId });
     },
+    selectChainFilter: (filter: string | null) => {
+      sendAction({ type: "select-chain-filter", filter });
+    },
     retrySummary: () => {
       setSummaryRetry((value) => value + 1);
     },
@@ -440,6 +547,12 @@ export function useDashboardData(options: DashboardDataOptions) {
     loadMoreActivities,
     loadMoreBikes,
     loadMoreChains,
+    saveWaxingMark,
+    waxingMarkSave: {
+      ...waxingMarkSave,
+      isBusy: waxingMarkSave.phase === "saving" || waxingMarkSave.phase === "refreshing",
+    },
+    retryWaxingRefresh,
     refreshAfterSavedChanges,
   };
 }
