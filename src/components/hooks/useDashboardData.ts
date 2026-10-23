@@ -11,7 +11,11 @@ import {
   type DashboardSelection,
   type SavedChangesResult,
 } from "@/lib/strava/dashboard-state.ts";
-import { buildActivityQueryString, getActivityRefreshLimit } from "@/lib/strava/dashboard-query.ts";
+import {
+  buildActivityQueryString,
+  getActivityRefreshRowCount,
+  MAX_DASHBOARD_PAGE_SIZE,
+} from "@/lib/strava/dashboard-query.ts";
 
 interface Page<T> {
   items: T[];
@@ -40,7 +44,7 @@ interface WaxingRefreshContext {
   activityId: string;
   key: ReturnType<typeof getDashboardRequestKey>;
   selection: ActivitySelection;
-  limit: number;
+  rowCount: number;
 }
 
 interface WaxingMarkSaveState {
@@ -441,16 +445,29 @@ export function useDashboardData(options: DashboardDataOptions) {
       canRetryRefresh: false,
     });
     try {
-      const payload = await readPayload(
-        await fetch(`/api/strava/activities?${buildActivityQueryString(context.selection, 0, context.limit)}`),
-        "The activity list could not be refreshed.",
-      );
-      if (!isActivityPage(payload)) throw new Error("The activity page returned an invalid response.");
+      const activities: ActivityView[] = [];
+      let hasMore = false;
+      while (activities.length < context.rowCount) {
+        const limit = Math.min(MAX_DASHBOARD_PAGE_SIZE, context.rowCount - activities.length);
+        const payload = await readPayload(
+          await fetch(
+            `/api/strava/activities?${buildActivityQueryString(context.selection, activities.length, limit)}`,
+          ),
+          "The activity list could not be refreshed.",
+        );
+        if (!isActivityPage(payload)) throw new Error("The activity page returned an invalid response.");
+        if (payload.activities.length === 0 && payload.hasMore) {
+          throw new Error("The activity list could not be refreshed.");
+        }
+        activities.push(...payload.activities);
+        hasMore = payload.hasMore;
+        if (!hasMore) break;
+      }
       sendAction({
         type: "activities-loaded",
         key: context.key,
-        activities: payload.activities,
-        hasMore: payload.hasMore,
+        activities,
+        hasMore,
       });
       waxingRefreshContextRef.current = null;
       setWaxingMarkSave({ activityId: null, phase: "idle", error: null, canRetryRefresh: false });
@@ -476,7 +493,7 @@ export function useDashboardData(options: DashboardDataOptions) {
       activityId,
       key: getDashboardRequestKey(currentState),
       selection: currentState.selection,
-      limit: getActivityRefreshLimit(currentState.activities.length),
+      rowCount: getActivityRefreshRowCount(currentState.activities.length),
     };
     waxingOperationRef.current = true;
     waxingRefreshContextRef.current = null;

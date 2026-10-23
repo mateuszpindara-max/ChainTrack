@@ -44,7 +44,7 @@ Właściciel wielu rowerów ma trudność z pamiętaniem, ile kilometrów przeje
 | S-01 | import-bike-linked-activities | importować i przeglądać nazwę, dystans, datę i rower aktywności | —             | FR-001, FR-002                        | done |
 | S-02 | refresh-activities-safely     | ręcznie importować nowe wpisy niezależnie od daty albo naprawiać całą historię; ukrywać niedopasowane i usuwać skasowane wraz z danymi zależnymi po pełnej weryfikacji, bez duplikatów | S-01          | FR-003                                | done |
 | S-03 | create-chain                  | tworzyć własny łańcuch                                          | —             | FR-004                                | done |
-| S-04 | assign-chain-and-mark-waxing  | przypisać łańcuch do aktywności, oznaczyć woskowanie i filtrować aktywności po łańcuchu | S-01, S-03    | US-01, FR-005, FR-006, FR-008, Access Control | in-progress |
+| S-04 | assign-chain-and-mark-waxing  | oznaczyć pierwszą jazdę po świeżym woskowaniu i pokazywać jej łańcuch na kolejnych jazdach tego roweru aż do następnego oznaczenia; filtrować aktywności po łańcuchu | S-01, S-03    | US-01, FR-005, FR-006, FR-008, Access Control | done |
 | S-05 | filter-activities             | filtrować aktywności po rowerze                                  | S-01          | FR-007                                | done |
 
 ## Streams
@@ -112,7 +112,7 @@ Brak osobnych fundamentów. Uwierzytelnianie i wdrożenie są już obecne; minim
 
 ### S-04: Przypisanie łańcucha, oznaczenie woskowania i filtrowanie po łańcuchu
 
-- **Outcome:** Użytkownik może przypisać utworzony łańcuch do aktywności, zapisać, że na jej końcu wykonał woskowanie, oraz filtrować aktywności po łańcuchu.
+- **Outcome:** Użytkownik może oznaczyć pierwszą jazdę po świeżym woskowaniu. Ten łańcuch obowiązuje na tej i kolejnych jazdach tego samego roweru aż do następnego oznaczenia; użytkownik może filtrować aktywności po łańcuchu.
 - **Change ID:** `assign-chain-and-mark-waxing`
 - **PRD refs:** US-01, FR-005, FR-006, FR-008, Access Control
 - **Prerequisites:** S-01, S-03
@@ -120,7 +120,7 @@ Brak osobnych fundamentów. Uwierzytelnianie i wdrożenie są już obecne; minim
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Błędne powiązanie łańcucha lub woskowania z aktywnością uniemożliwi wiarygodne śledzenie przebiegu.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-05: Filtrowanie aktywności po rowerze
 

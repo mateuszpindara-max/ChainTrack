@@ -24,8 +24,8 @@ export function buildActivityQueryString(
   return params.toString();
 }
 
-export function getActivityRefreshLimit(loadedRowCount: number): number {
-  return Math.min(MAX_DASHBOARD_PAGE_SIZE, Math.max(DASHBOARD_PAGE_SIZE, loadedRowCount));
+export function getActivityRefreshRowCount(loadedRowCount: number): number {
+  return Math.max(DASHBOARD_PAGE_SIZE, loadedRowCount);
 }
 
 export interface DashboardActivityStore {

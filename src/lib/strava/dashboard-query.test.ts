@@ -7,7 +7,7 @@ import {
   buildActivityQueryString,
   getActivityPage,
   getBikePage,
-  getActivityRefreshLimit,
+  getActivityRefreshRowCount,
   parseActivityBikeFilter,
   parseActivityChainFilter,
   parseActivityLimit,
@@ -35,13 +35,13 @@ void test("builds activity query strings for all-bike, bike, and chain-filter se
   );
 });
 
-void test("sizes activity refreshes to at least one page and no more than the cap", () => {
-  assert.equal(getActivityRefreshLimit(0), DASHBOARD_PAGE_SIZE);
-  assert.equal(getActivityRefreshLimit(DASHBOARD_PAGE_SIZE - 1), DASHBOARD_PAGE_SIZE);
-  assert.equal(getActivityRefreshLimit(DASHBOARD_PAGE_SIZE), DASHBOARD_PAGE_SIZE);
-  assert.equal(getActivityRefreshLimit(DASHBOARD_PAGE_SIZE + 1), DASHBOARD_PAGE_SIZE + 1);
-  assert.equal(getActivityRefreshLimit(MAX_DASHBOARD_PAGE_SIZE), MAX_DASHBOARD_PAGE_SIZE);
-  assert.equal(getActivityRefreshLimit(MAX_DASHBOARD_PAGE_SIZE + 1), MAX_DASHBOARD_PAGE_SIZE);
+void test("refreshes at least one page while preserving the previously loaded row count", () => {
+  assert.equal(getActivityRefreshRowCount(0), DASHBOARD_PAGE_SIZE);
+  assert.equal(getActivityRefreshRowCount(DASHBOARD_PAGE_SIZE - 1), DASHBOARD_PAGE_SIZE);
+  assert.equal(getActivityRefreshRowCount(DASHBOARD_PAGE_SIZE), DASHBOARD_PAGE_SIZE);
+  assert.equal(getActivityRefreshRowCount(DASHBOARD_PAGE_SIZE + 1), DASHBOARD_PAGE_SIZE + 1);
+  assert.equal(getActivityRefreshRowCount(MAX_DASHBOARD_PAGE_SIZE), MAX_DASHBOARD_PAGE_SIZE);
+  assert.equal(getActivityRefreshRowCount(MAX_DASHBOARD_PAGE_SIZE + 1), MAX_DASHBOARD_PAGE_SIZE + 1);
 });
 
 class MemoryDashboardStore implements DashboardActivityStore, DashboardBikeStore {
