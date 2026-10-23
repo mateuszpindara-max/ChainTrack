@@ -254,12 +254,12 @@ No database schema change is expected. Existing bike and activity data remain th
 
 #### Automated
 
-- [x] 3.1 Lint and type check pass: `npm run lint`, `npm run check`.
-- [x] 3.2 Production build succeeds: `npm run build`.
-- [x] 3.3 Smoke test passes and proves public-root and signed-in-root behavior: `npm run smoke`.
+- [x] 3.1 Lint and type check pass: `npm run lint`, `npm run check`. — b09273a
+- [x] 3.2 Production build succeeds: `npm run build`. — b09273a
+- [x] 3.3 Smoke test passes and proves public-root and signed-in-root behavior: `npm run smoke`. — b09273a
 
 #### Manual
 
-- [x] 3.4 Signed-in root redirects to dashboard; signed-out root remains public and protected dashboard redirects to sign-in.
-- [x] 3.5 Import/synchronization updates dashboard bikes and summary without a full reload.
-- [x] 3.6 Signed-in summary, bike selection, chain navigation, Strava actions and responsive sidebar work together end-to-end.
+- [x] 3.4 Signed-in root redirects to dashboard; signed-out root remains public and protected dashboard redirects to sign-in. — b09273a
+- [x] 3.5 Import/synchronization updates dashboard bikes and summary without a full reload. — b09273a
+- [x] 3.6 Signed-in summary, bike selection, chain navigation, Strava actions and responsive sidebar work together end-to-end. — b09273a
