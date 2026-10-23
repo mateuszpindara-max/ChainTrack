@@ -45,7 +45,7 @@ Właściciel wielu rowerów ma trudność z pamiętaniem, ile kilometrów przeje
 | S-02 | refresh-activities-safely     | ręcznie importować nowe wpisy niezależnie od daty albo naprawiać całą historię; ukrywać niedopasowane i usuwać skasowane wraz z danymi zależnymi po pełnej weryfikacji, bez duplikatów | S-01          | FR-003                                | done |
 | S-03 | create-chain                  | tworzyć własny łańcuch                                          | —             | FR-004                                | done |
 | S-04 | assign-chain-and-mark-waxing  | przypisać łańcuch do aktywności, oznaczyć woskowanie i filtrować aktywności po łańcuchu | S-01, S-03    | US-01, FR-005, FR-006, FR-008, Access Control | proposed |
-| S-05 | filter-activities             | filtrować aktywności po rowerze                                  | S-01          | FR-007                                | in-progress |
+| S-05 | filter-activities             | filtrować aktywności po rowerze                                  | S-01          | FR-007                                | done |
 
 ## Streams
 
@@ -132,7 +132,7 @@ Brak osobnych fundamentów. Uwierzytelnianie i wdrożenie są już obecne; minim
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Filtr i podsumowanie muszą uwzględniać aktywności przypisane do roweru oraz granice bieżącego lokalnego roku.
-- **Status:** in-progress
+- **Status:** done
 
 ## Backlog Handoff
 
@@ -162,3 +162,4 @@ Brak pytań przekrojowych. Potwierdzenie dostępu do Strava blokujące `S-01` zn
 - **S-01: Użytkownik widzi aktywności przypisane do rowerów.** — Archived 2026-10-16 → `context/archive/2026-09-28-import-bike-linked-activities/`. Lesson: —.
 - **S-02: Użytkownik może ręcznie importować aktywności nowo widoczne w Stravie niezależnie od daty albo naprawić całą historię, odświeżając obecnie zapisywane pola i przypisania roweru. Naprawa zachowuje, ale ukrywa aktywności nadal obecne bez jednoznacznego roweru; aktywności skasowane w Stravie usuwa fizycznie wraz z danymi zależnymi dopiero po pełnym, zweryfikowanym przebiegu, bez duplikatów.** — Archived 2026-10-18 → `context/archive/2026-10-16-refresh-activities-safely/`. Lesson: —.
 - **S-03: Użytkownik może utworzyć własny łańcuch, który będzie można przypisać do aktywności.** — Archived 2026-10-23 → `context/archive/2026-10-22-create-chain/`. Lesson: —.
+- **S-05: Użytkownik może zawęzić listę aktywności do wybranego roweru i zobaczyć podsumowanie jazdy w bieżącym roku.** — Archived 2026-10-23 → `context/archive/2026-10-23-filter-activities/`. Lesson: —.

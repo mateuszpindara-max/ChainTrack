@@ -1,10 +1,10 @@
 ---
 change_id: filter-activities
 title: Bike navigation and activity overview
-status: impl_reviewed
+status: archived
 created: 2026-10-23
 updated: 2026-10-23
-archived_at: null
+archived_at: 2026-10-23T09:28:28Z
 ---
 
 ## Notes
