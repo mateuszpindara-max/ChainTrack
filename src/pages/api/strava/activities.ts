@@ -32,7 +32,9 @@ export const GET: APIRoute = async (context) => {
     async readActivities(input) {
       let query = db
         .from("activities_with_chain")
-        .select("id, name, distance_meters, started_at, bike_id, chain_id, chain_name, is_waxing_start")
+        .select(
+          "id, name, distance_meters, started_at, bike_id, chain_id, chain_name, is_waxing_start, cumulative_distance_meters",
+        )
         .eq("user_id", input.userId)
         .not("bike_id", "is", null);
       if (input.bikeId) query = query.eq("bike_id", input.bikeId);

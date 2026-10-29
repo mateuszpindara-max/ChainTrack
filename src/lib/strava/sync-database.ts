@@ -135,6 +135,7 @@ export interface StravaSyncDatabase {
           chain_id: string | null;
           chain_name: string | null;
           is_waxing_start: boolean;
+          cumulative_distance_meters: number | null;
         };
         Relationships: [];
       };

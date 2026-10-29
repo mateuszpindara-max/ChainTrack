@@ -1,6 +1,6 @@
 begin;
 
-select plan(35);
+select plan(42);
 
 insert into auth.users (id, aud, role, email, encrypted_password, email_confirmed_at)
 values
@@ -82,6 +82,12 @@ select is((select chain_id from public.activities_with_chain where id = '1000000
 select is((select chain_id from public.activities_with_chain where id = '10000000-0000-0000-0000-000000000107'), '10000000-0000-0000-0000-000000000111'::uuid, 'higher id at a tied time sorts after the mark');
 select is((select chain_id from public.activities_with_chain where id = '10000000-0000-0000-0000-000000000201'), null::uuid, 'another bike has no chain before its own mark');
 select is((select chain_id from public.activities_with_chain where id = '10000000-0000-0000-0000-000000000203'), '10000000-0000-0000-0000-000000000112'::uuid, 'another bike carries only its own mark');
+select is((select cumulative_distance_meters from public.activities_with_chain where id = '10000000-0000-0000-0000-000000000103'), 3000::double precision, 'an isolated older ride includes all earlier rides on its bike');
+select is((select cumulative_distance_meters from public.activities_with_chain where id = '10000000-0000-0000-0000-000000000102'), 2000::double precision, 'cumulative distance includes the current ride');
+select is((select cumulative_distance_meters from public.activities_with_chain where id = '10000000-0000-0000-0000-000000000105'), 5000::double precision, 'lower ID at a tied time accrues before the next ride');
+select is((select cumulative_distance_meters from public.activities_with_chain where id = '10000000-0000-0000-0000-000000000106'), 6000::double precision, 'tied ride total includes earlier IDs and itself');
+select is((select cumulative_distance_meters from public.activities_with_chain where id = '10000000-0000-0000-0000-000000000107'), 7000::double precision, 'higher ID at a tied time accrues after lower IDs');
+select is((select cumulative_distance_meters from public.activities_with_chain where id = '10000000-0000-0000-0000-000000000201'), 1000::double precision, 'cumulative distance is isolated to the activity bike');
 
 select lives_ok(
   $$insert into public.activities (user_id, bike_id, strava_activity_id, name, distance_meters, started_at)
@@ -105,6 +111,7 @@ select is((select chain_id from public.activities_with_chain where id = '1000000
 select is((select chain_id from public.activities_with_chain where id = '10000000-0000-0000-0000-000000000111'), '10000000-0000-0000-0000-000000000112'::uuid, 'marked ride initially governs before being hidden');
 update public.activities set bike_id = null where id = '10000000-0000-0000-0000-000000000110';
 select is((select chain_id from public.activities_with_chain where id = '10000000-0000-0000-0000-000000000110'), null::uuid, 'activity without a bike has no derived chain');
+select is((select cumulative_distance_meters from public.activities_with_chain where id = '10000000-0000-0000-0000-000000000110'), null::double precision, 'activity without a bike has no cumulative distance');
 select ok((select is_waxing_start from public.activities_with_chain where id = '10000000-0000-0000-0000-000000000110'), 'hidden marked ride retains its waxing-start flag');
 select is((select chain_id from public.activities_with_chain where id = '10000000-0000-0000-0000-000000000111'), '10000000-0000-0000-0000-000000000111'::uuid, 'hidden mark stops governing its old bike');
 

@@ -124,6 +124,7 @@ void test("activity pages are owner-scoped, optionally bike-filtered, and offset
     id: `activity-${String(index).padStart(3, "0")}`,
     name: `Ride ${index}`,
     distance_meters: index * 100,
+    cumulative_distance_meters: (index + 1) * 1_000,
     started_at: new Date(Date.UTC(2026, 0, 1, 0, index)).toISOString(),
     bike_id: index % 2 === 0 ? bikeA : bikeB,
     userId: "user-a",
@@ -166,6 +167,10 @@ void test("activity pages are owner-scoped, optionally bike-filtered, and offset
   assert.equal(firstPage.hasMore, true);
   assert.equal(nextPage.activities.length, 2);
   assert.equal(nextPage.hasMore, false);
+  assert.deepEqual(
+    nextPage.activities.map((activity) => activity.cumulativeDistanceMeters),
+    [2_000, 1_000],
+  );
   assert.equal(firstPage.activities[0]?.id, `activity-${String(DASHBOARD_PAGE_SIZE + 1).padStart(3, "0")}`);
   assert.ok(selectedPage.activities.every((activity) => activity.bikeName === "Road"));
   assert.deepEqual(unownedPage, { activities: [], hasMore: false });
@@ -178,6 +183,7 @@ void test("activity pages filter by chain before paging and honor a custom limit
     id: `activity-${number}`,
     name: `Ride ${number}`,
     distance_meters: number * 100,
+    cumulative_distance_meters: number * 1_000,
     started_at: new Date(Date.UTC(2026, 0, 1, 0, number)).toISOString(),
     bike_id: bikeA,
     chain_id: number === 1 ? null : number < 4 ? bikeB : "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
@@ -187,11 +193,17 @@ void test("activity pages filter by chain before paging and honor a custom limit
   }));
 
   const page = await getActivityPage(store, "user-a", { offset: 0, bikeId: bikeA, chainId: bikeB, limit: 1 });
+  const unfilteredPage = await getActivityPage(store, "user-a", { offset: 0, bikeId: bikeA, chainId: null, limit: 4 });
   assert.deepEqual(
     page.activities.map((activity) => activity.id),
     ["activity-3"],
   );
   assert.equal(page.activities[0]?.chainName, "Chain B");
+  assert.equal(page.activities[0]?.cumulativeDistanceMeters, 3_000);
+  assert.equal(
+    page.activities[0]?.cumulativeDistanceMeters,
+    unfilteredPage.activities.find((activity) => activity.id === "activity-3")?.cumulativeDistanceMeters,
+  );
   assert.equal(page.hasMore, true);
 });
 

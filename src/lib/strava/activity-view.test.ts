@@ -5,7 +5,14 @@ import { formatDistanceKm, formatLocalActivityDate, toActivityViews } from "./ac
 void test("activity views include the required fields in newest-first order", () => {
   const views = toActivityViews(
     [
-      { id: "old", name: "Morning ride", distance_meters: 12_300, started_at: "2026-10-12T07:00:00Z", bike_id: "b1" },
+      {
+        id: "old",
+        name: "Morning ride",
+        distance_meters: 12_300,
+        started_at: "2026-10-12T07:00:00Z",
+        bike_id: "b1",
+        cumulative_distance_meters: 45_600,
+      },
       {
         id: "new",
         name: "Evening ride",
@@ -15,6 +22,7 @@ void test("activity views include the required fields in newest-first order", ()
         chain_id: "chain-2",
         chain_name: "Touring chain",
         is_waxing_start: true,
+        cumulative_distance_meters: 5_000,
       },
     ],
     [
@@ -36,6 +44,7 @@ void test("activity views include the required fields in newest-first order", ()
     chainId: "chain-2",
     chainName: "Touring chain",
     isWaxingStart: true,
+    cumulativeDistanceMeters: 5_000,
   });
   assert.deepEqual(views[1], {
     id: "old",
@@ -46,7 +55,15 @@ void test("activity views include the required fields in newest-first order", ()
     chainId: null,
     chainName: null,
     isWaxingStart: false,
+    cumulativeDistanceMeters: 45_600,
   });
+  assert.equal(
+    toActivityViews(
+      [{ id: "legacy", name: "Legacy ride", distance_meters: 500, started_at: "2026-10-11T07:00:00Z", bike_id: "b1" }],
+      [{ id: "b1", name: "Road bike" }],
+    )[0]?.cumulativeDistanceMeters,
+    null,
+  );
   assert.equal(formatDistanceKm(12_300), "12.3 km");
   assert.equal(formatLocalActivityDate("2026-10-13T01:00:00Z", "en-US", "America/Los_Angeles"), "Oct 12, 2026");
 });

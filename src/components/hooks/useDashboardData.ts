@@ -100,6 +100,8 @@ function isActivityPage(value: unknown): value is { activities: ActivityView[]; 
         typeof item.bikeName === "string" &&
         (item.chainId === null || typeof item.chainId === "string") &&
         (item.chainName === null || typeof item.chainName === "string") &&
+        (item.cumulativeDistanceMeters === null ||
+          (typeof item.cumulativeDistanceMeters === "number" && Number.isFinite(item.cumulativeDistanceMeters))) &&
         typeof item.isWaxingStart === "boolean"
       );
     }) &&
