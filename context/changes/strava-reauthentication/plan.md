@@ -162,26 +162,26 @@ No database migration is expected. Existing OAuth state and connection tables ar
 
 #### Automated
 
-- [x] 1.1 `npm test` passes with focused regression coverage for authorization outcomes, callback status mapping, same-athlete enforcement, and preserved import progress.
-- [x] 1.2 `npm run check` passes after the response/status contract changes.
+- [x] 1.1 `npm test` passes with focused regression coverage for authorization outcomes, callback status mapping, same-athlete enforcement, and preserved import progress. — 361def1
+- [x] 1.2 `npm run check` passes after the response/status contract changes. — 361def1
 
 #### Manual
 
-- [x] 1.3 A reviewer confirms callback-returned statuses are allowlisted and do not expose OAuth query values, provider payloads, tokens, or secrets.
-- [x] 1.4 A reviewer confirms a different Strava athlete remains blocked before any connection update.
+- [x] 1.3 A reviewer confirms callback-returned statuses are allowlisted and do not expose OAuth query values, provider payloads, tokens, or secrets. — 361def1
+- [x] 1.4 A reviewer confirms a different Strava athlete remains blocked before any connection update. — 361def1
 
 ### Phase 2: Expose Recovery in the Dashboard
 
 #### Automated
 
-- [ ] 2.1 `npm test` passes, including focused checks that the recovery action is enabled for only the two agreed triggers and is absent for unrelated errors.
-- [ ] 2.2 `npm run check` and `npm run lint` pass.
-- [ ] 2.3 `git diff --check` reports no whitespace errors, and the change introduces no database migration or secret-bearing value.
+- [x] 2.1 `npm test` passes, including focused checks that the recovery action is enabled for only the two agreed triggers and is absent for unrelated errors.
+- [x] 2.2 `npm run check` and `npm run lint` pass.
+- [x] 2.3 `git diff --check` reports no whitespace errors, and the change introduces no database migration or secret-bearing value.
 
 #### Manual
 
-- [ ] 2.4 From a connected dashboard, simulate an authorization failure and confirm the reauthorization action and safe recovery message appear.
-- [ ] 2.5 Confirm the exact selected invalid-response message also offers reauthorization, while an unrelated network or provider failure does not.
-- [ ] 2.6 Complete OAuth for the same athlete and confirm the dashboard reports success and existing activities, chain assignments, import progress, and sync state remain present.
-- [ ] 2.7 Cancel or deny OAuth and confirm the user returns to the dashboard with a safe status and can retry.
-- [ ] 2.8 Attempt authorization for a different athlete and confirm it is rejected without changing the existing connection or history.
+- [x] 2.4 From a connected dashboard, simulate an authorization failure and confirm the reauthorization action and safe recovery message appear.
+- [x] 2.5 Confirm the exact selected invalid-response message also offers reauthorization, while an unrelated network or provider failure does not.
+- [x] 2.6 Complete OAuth for the same athlete and confirm the dashboard reports success and existing activities, chain assignments, import progress, and sync state remain present.
+- [x] 2.7 Cancel or deny OAuth and confirm the user returns to the dashboard with a safe status and can retry.
+- [x] 2.8 Attempt authorization for a different athlete and confirm it is rejected without changing the existing connection or history.

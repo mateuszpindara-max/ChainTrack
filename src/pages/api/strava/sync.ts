@@ -37,12 +37,7 @@ interface SyncRunRow {
   verification_step: number;
 }
 
-function failure(
-  message: string,
-  statusCode: number,
-  mode?: "new" | "repair",
-  authorizationFailure = false,
-): Response {
+function failure(message: string, statusCode: number, mode?: "new" | "repair", authorizationFailure = false): Response {
   return Response.json(
     {
       outcome: "failed",

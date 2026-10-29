@@ -3,6 +3,7 @@ import type { ActivityView } from "./activity-view.ts";
 export type StravaSyncMode = "new" | "repair";
 export const STRAVA_CALLBACK_STATUSES = ["connected", "denied", "failed"] as const;
 export type StravaCallbackStatus = (typeof STRAVA_CALLBACK_STATUSES)[number];
+export const INVALID_STRAVA_SYNC_RESPONSE_MESSAGE = "The Strava synchronization returned an invalid response.";
 
 export interface ActiveStravaSyncRun {
   id: string;
@@ -44,6 +45,34 @@ export function isStravaSyncMode(value: unknown): value is StravaSyncMode {
 
 export function isStravaCallbackStatus(value: unknown): value is StravaCallbackStatus {
   return typeof value === "string" && STRAVA_CALLBACK_STATUSES.some((status) => status === value);
+}
+
+export function shouldOfferStravaReauthorization(
+  connectionStatus: "connected" | "not-connected" | "unavailable",
+  authorizationFailure: boolean,
+  message: string | undefined,
+  callbackStatus: StravaCallbackStatus | null,
+): boolean {
+  return (
+    connectionStatus === "connected" &&
+    (authorizationFailure ||
+      message === INVALID_STRAVA_SYNC_RESPONSE_MESSAGE ||
+      callbackStatus === "denied" ||
+      callbackStatus === "failed")
+  );
+}
+
+export function stravaCallbackMessage(status: StravaCallbackStatus | null): string | null {
+  if (status === "connected") {
+    return "Strava reconnected. Your activities and saved synchronization progress are unchanged.";
+  }
+  if (status === "denied") {
+    return "Strava authorization was cancelled or required permissions were not granted. You can try again.";
+  }
+  if (status === "failed") {
+    return "Strava could not be reconnected. Your existing connection and activity history were not changed. You can try again.";
+  }
+  return null;
 }
 
 export function stravaCallbackDenialStatus(

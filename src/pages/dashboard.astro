@@ -7,8 +7,11 @@ import { toChainView, type ChainView } from "@/lib/chains/chain.ts";
 import type { ChainsDatabase } from "@/lib/chains/database.ts";
 import { createClient } from "@/lib/supabase";
 import type { StravaSyncDatabase } from "@/lib/strava/sync-database.ts";
+import { isStravaCallbackStatus } from "@/lib/strava/sync-contract.ts";
 
 const { user } = Astro.locals;
+const rawCallbackStatus = Astro.url.searchParams.get("strava");
+const callbackStatus = isStravaCallbackStatus(rawCallbackStatus) ? rawCallbackStatus : null;
 let connectionStatus: "connected" | "not-connected" | "unavailable" = "unavailable";
 let initialBikes: BikeRow[] = [];
 let initialBikesHasMore = false;
@@ -91,6 +94,7 @@ if (supabase && user) {
     <ActivityDashboard
       client:load
       connectionStatus={connectionStatus}
+      callbackStatus={callbackStatus}
       initialBikes={initialBikes}
       initialBikesHasMore={initialBikesHasMore}
       initialBikesError={initialBikesError}

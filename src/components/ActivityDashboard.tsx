@@ -9,10 +9,14 @@ import type { BikeRow } from "@/lib/strava/activity-view.ts";
 import {
   activeRunAfterSync,
   buildStravaSyncRequest,
+  INVALID_STRAVA_SYNC_RESPONSE_MESSAGE,
+  shouldOfferStravaReauthorization,
+  stravaCallbackMessage,
   syncCountSummary,
   syncResultMessage,
   type ActiveStravaSyncRun,
   type InitialImportResponse,
+  type StravaCallbackStatus,
   type StravaSyncResponse,
 } from "@/lib/strava/sync-contract.ts";
 
@@ -21,6 +25,7 @@ type ActiveSyncRun = ActiveStravaSyncRun;
 
 interface Props {
   connectionStatus: "connected" | "not-connected" | "unavailable";
+  callbackStatus: StravaCallbackStatus | null;
   initialBikes: BikeRow[];
   initialBikesHasMore: boolean;
   initialBikesError: boolean;
@@ -50,6 +55,7 @@ function isImportResponse(value: unknown): value is ImportResponse {
       response.status === "running" ||
       response.status === "partial" ||
       response.status === "completed") &&
+    (response.authorizationFailure === undefined || response.authorizationFailure === true) &&
     (response.message === undefined || typeof response.message === "string") &&
     (response.activities === undefined || Array.isArray(response.activities))
   );
@@ -67,6 +73,7 @@ function LocalActivityDate({ value }: { value: string }) {
 
 export default function ActivityDashboard({
   connectionStatus,
+  callbackStatus,
   initialBikes,
   initialBikesHasMore,
   initialBikesError,
@@ -101,6 +108,13 @@ export default function ActivityDashboard({
     selectedBikeId !== null
       ? (data.bikes.items.find((bike) => bike.id === selectedBikeId)?.name ?? "Selected bike")
       : "All bikes";
+  const callbackMessage = stravaCallbackMessage(callbackStatus);
+  const showReauthorization = shouldOfferStravaReauthorization(
+    connectionStatus,
+    result?.authorizationFailure === true,
+    result?.message,
+    callbackStatus,
+  );
 
   useEffect(() => {
     const dialog = drawerRef.current;
@@ -132,7 +146,8 @@ export default function ActivityDashboard({
       if (!isImportResponse(payload)) throw new Error("The activity import returned an invalid response.");
       if (!response.ok) {
         if (payload.savedChanges) data.refreshAfterSavedChanges(payload);
-        throw new Error(payload.message ?? "The activity import could not be started.");
+        setResult(payload);
+        return;
       }
       setResult(payload);
       data.refreshAfterSavedChanges(payload);
@@ -169,7 +184,7 @@ export default function ActivityDashboard({
         body: JSON.stringify(buildStravaSyncRequest(mode, activeSyncRun)),
       });
       const payload: unknown = await response.json();
-      if (!isImportResponse(payload)) throw new Error("The Strava synchronization returned an invalid response.");
+      if (!isImportResponse(payload)) throw new Error(INVALID_STRAVA_SYNC_RESPONSE_MESSAGE);
       setResult({ ...payload, mode });
       data.refreshAfterSavedChanges(payload);
       setActiveSyncRun(activeRunAfterSync(mode, payload, activeSyncRun));
@@ -237,68 +252,87 @@ export default function ActivityDashboard({
                 : "Connection status unavailable"}
           </p>
         </div>
-        {connectionStatus === "connected" && importCompleted ? (
-          <details className="relative">
-            <summary className="inline-flex min-h-11 cursor-pointer list-none items-center justify-center rounded-md bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200">
-              Synchronize
-            </summary>
-            <div className="absolute right-0 z-10 mt-2 grid w-72 max-w-[calc(100vw-2.5rem)] gap-1 rounded-md border border-white/15 bg-slate-950 p-1 shadow-xl">
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.currentTarget.closest("details")?.removeAttribute("open");
-                  void synchronizeActivities("new");
-                }}
-                disabled={loading || activeSyncRun?.mode === "repair"}
-                className="min-h-10 rounded px-3 py-2 text-left text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {loading && loadingAction === "new"
-                  ? "Synchronizing..."
-                  : activeSyncRun?.mode === "new"
-                    ? "Continue Import new"
-                    : "Import new"}
-              </button>
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.currentTarget.closest("details")?.removeAttribute("open");
-                  void synchronizeActivities("repair");
-                }}
-                disabled={loading || activeSyncRun?.mode === "new"}
-                className="grid min-h-10 gap-1 rounded px-3 py-2 text-left text-sm font-medium whitespace-normal text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <span>
-                  {loading && loadingAction === "repair"
-                    ? "Repairing..."
-                    : activeSyncRun?.mode === "repair"
-                      ? "Continue full-history repair"
-                      : "Repair full history"}
-                </span>
-                <span className="text-xs leading-snug font-normal text-amber-200">
-                  Repair permanently removes local activities Strava confirms as deleted, including their linked data.
-                </span>
-              </button>
-            </div>
-          </details>
-        ) : connectionStatus === "connected" ? (
-          <button
-            type="button"
-            onClick={importActivities}
-            disabled={loading}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200 disabled:cursor-wait disabled:opacity-60"
-          >
-            {loading ? "Importing activities..." : importBatchHasMore ? "Continue import" : "Import activities"}
-          </button>
-        ) : connectionStatus === "not-connected" ? (
-          <a
-            href="/api/strava/connect"
-            className="inline-flex min-h-11 items-center justify-center rounded-md bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200"
-          >
-            Connect Strava
-          </a>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-3">
+          {showReauthorization && (
+            <a
+              href="/api/strava/connect"
+              className="inline-flex min-h-11 items-center justify-center rounded-md border border-orange-300/60 px-4 py-2.5 text-sm font-semibold text-orange-100 transition-colors hover:bg-orange-300/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200"
+            >
+              Reauthorize Strava
+            </a>
+          )}
+          {connectionStatus === "connected" && importCompleted ? (
+            <details className="relative">
+              <summary className="inline-flex min-h-11 cursor-pointer list-none items-center justify-center rounded-md bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200">
+                Synchronize
+              </summary>
+              <div className="absolute right-0 z-10 mt-2 grid w-72 max-w-[calc(100vw-2.5rem)] gap-1 rounded-md border border-white/15 bg-slate-950 p-1 shadow-xl">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.currentTarget.closest("details")?.removeAttribute("open");
+                    void synchronizeActivities("new");
+                  }}
+                  disabled={loading || activeSyncRun?.mode === "repair"}
+                  className="min-h-10 rounded px-3 py-2 text-left text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {loading && loadingAction === "new"
+                    ? "Synchronizing..."
+                    : activeSyncRun?.mode === "new"
+                      ? "Continue Import new"
+                      : "Import new"}
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.currentTarget.closest("details")?.removeAttribute("open");
+                    void synchronizeActivities("repair");
+                  }}
+                  disabled={loading || activeSyncRun?.mode === "new"}
+                  className="grid min-h-10 gap-1 rounded px-3 py-2 text-left text-sm font-medium whitespace-normal text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span>
+                    {loading && loadingAction === "repair"
+                      ? "Repairing..."
+                      : activeSyncRun?.mode === "repair"
+                        ? "Continue full-history repair"
+                        : "Repair full history"}
+                  </span>
+                  <span className="text-xs leading-snug font-normal text-amber-200">
+                    Repair permanently removes local activities Strava confirms as deleted, including their linked data.
+                  </span>
+                </button>
+              </div>
+            </details>
+          ) : connectionStatus === "connected" ? (
+            <button
+              type="button"
+              onClick={importActivities}
+              disabled={loading}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200 disabled:cursor-wait disabled:opacity-60"
+            >
+              {loading ? "Importing activities..." : importBatchHasMore ? "Continue import" : "Import activities"}
+            </button>
+          ) : connectionStatus === "not-connected" ? (
+            <a
+              href="/api/strava/connect"
+              className="inline-flex min-h-11 items-center justify-center rounded-md bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200"
+            >
+              Connect Strava
+            </a>
+          ) : null}
+        </div>
       </section>
 
+      {callbackMessage && (
+        <p
+          className={`border-b border-white/10 py-4 text-sm ${callbackStatus === "connected" ? "text-emerald-200" : "text-amber-200"}`}
+          role="status"
+          aria-live="polite"
+        >
+          {callbackMessage}
+        </p>
+      )}
       {loading && (
         <p className="border-b border-white/10 py-4 text-sm text-blue-100" role="status" aria-live="polite">
           {loadingAction === "new"

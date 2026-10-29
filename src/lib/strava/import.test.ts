@@ -640,7 +640,7 @@ void test("repair treats authorization, rate-limit, provider, and malformed acti
     assert.equal(result.outcome, "partial");
     assert.equal(store.activities.has(2000 + index), true);
     assert.equal(store.verifiedMissingActivityIds.has(2000 + index), false);
-      assert.equal(result.authorizationFailure, index < 2 ? true : undefined);
+    assert.equal(result.authorizationFailure, index < 2 ? true : undefined);
   }
 });
 

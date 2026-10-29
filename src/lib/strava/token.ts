@@ -1,9 +1,4 @@
-import {
-  decryptToken,
-  encryptToken,
-  StravaAuthorizationError,
-  type StravaConfiguration,
-} from "./security.ts";
+import { decryptToken, encryptToken, StravaAuthorizationError, type StravaConfiguration } from "./security.ts";
 
 export interface StravaTokenConnection {
   access_token_ciphertext: string;

@@ -4,10 +4,13 @@ import {
   activeRunAfterSync,
   activitiesAfterSync,
   buildStravaSyncRequest,
+  INVALID_STRAVA_SYNC_RESPONSE_MESSAGE,
   isStravaSyncMode,
   isStravaCallbackStatus,
   stravaCallbackDenialStatus,
+  stravaCallbackMessage,
   stravaCallbackRedirect,
+  shouldOfferStravaReauthorization,
   syncCountSummary,
   syncResultMessage,
   type StravaSyncResponse,
@@ -25,6 +28,32 @@ void test("callback outcomes use only fixed safe dashboard statuses", () => {
   assert.equal(stravaCallbackRedirect("denied"), "/dashboard?strava=denied");
   assert.equal(stravaCallbackRedirect("failed"), "/dashboard?strava=failed");
   assert.equal(stravaCallbackRedirect("connected"), "/dashboard?strava=connected");
+});
+
+void test("dashboard offers reauthorization only for agreed failures or a retryable callback result", () => {
+  const connected = "connected" as const;
+  const noCallback = null;
+
+  assert.equal(shouldOfferStravaReauthorization(connected, true, "Connection unavailable.", noCallback), true);
+  assert.equal(
+    shouldOfferStravaReauthorization(connected, false, INVALID_STRAVA_SYNC_RESPONSE_MESSAGE, noCallback),
+    true,
+  );
+  assert.equal(shouldOfferStravaReauthorization(connected, false, "Network request failed.", noCallback), false);
+  assert.equal(shouldOfferStravaReauthorization(connected, false, "Provider rate limit.", noCallback), false);
+  assert.equal(shouldOfferStravaReauthorization(connected, false, undefined, noCallback), false);
+  assert.equal(shouldOfferStravaReauthorization(connected, false, undefined, "connected"), false);
+  assert.equal(shouldOfferStravaReauthorization(connected, false, undefined, "denied"), true);
+  assert.equal(shouldOfferStravaReauthorization(connected, false, undefined, "failed"), true);
+  assert.equal(shouldOfferStravaReauthorization("not-connected", false, undefined, "failed"), false);
+
+  assert.equal(
+    stravaCallbackMessage("connected"),
+    "Strava reconnected. Your activities and saved synchronization progress are unchanged.",
+  );
+  assert.match(stravaCallbackMessage("denied") ?? "", /cancelled|not granted/);
+  assert.match(stravaCallbackMessage("failed") ?? "", /try again/);
+  assert.equal(stravaCallbackMessage(null), null);
 });
 
 void test("sync requests preserve the selected mode and continue only that mode's active run", () => {
