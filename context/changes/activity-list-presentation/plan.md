@@ -255,30 +255,30 @@ Ship the additive migration before deploying code that selects the new view colu
 
 #### Automated
 
-- [x] 2.1 Type checking passes: `npm run check`
-- [x] 2.2 Linting passes: `npm run lint`
-- [x] 2.3 Unit tests pass: `npm test`
+- [x] 2.1 Type checking passes: `npm run check` — 3aafc8d
+- [x] 2.2 Linting passes: `npm run lint` — 3aafc8d
+- [x] 2.3 Unit tests pass: `npm test` — 3aafc8d
 
 #### Manual
 
-- [x] 2.4 The title/date, bike, and metric/status rows follow the approved order with labels on the left and values on the right.
-- [x] 2.5 The full select is absent until its icon is activated; activating the icon expands the editor and set, clear, save, and error states still work.
-- [x] 2.6 Keyboard-only users can open and operate the editor, receive save/error announcements, and return focus to the row action.
-- [x] 2.7 The row remains readable without horizontal overflow at mobile widths and uses the existing dashboard visual language.
+- [x] 2.4 The title/date, bike, and metric/status rows follow the approved order with labels on the left and values on the right. — 3aafc8d
+- [x] 2.5 The full select is absent until its icon is activated; activating the icon expands the editor and set, clear, save, and error states still work. — 3aafc8d
+- [x] 2.6 Keyboard-only users can open and operate the editor, receive save/error announcements, and return focus to the row action. — 3aafc8d
+- [x] 2.7 The row remains readable without horizontal overflow at mobile widths and uses the existing dashboard visual language. — 3aafc8d
 
 ### Phase 3: End-to-End Acceptance
 
 #### Automated
 
-- [ ] 3.1 Database tests pass: `npx supabase test db`
-- [ ] 3.2 Unit tests pass: `npm test`
-- [ ] 3.3 Type checking passes: `npm run check`
-- [ ] 3.4 Linting passes: `npm run lint`
-- [ ] 3.5 Production build succeeds: `npm run build`
-- [ ] 3.6 Auth-flow smoke check passes against a running local server: `npm run smoke`
+- [x] 3.1 Database tests pass: `npx supabase test db`
+- [x] 3.2 Unit tests pass: `npm test`
+- [x] 3.3 Type checking passes: `npm run check`
+- [x] 3.4 Linting passes: `npm run lint`
+- [x] 3.5 Production build succeeds: `npm run build`
+- [x] 3.6 Auth-flow smoke check passes against a running local server: `npm run smoke`
 
 #### Manual
 
-- [ ] 3.7 Walk through all-bike and selected-bike activity lists, including a chain filter and a later page, and confirm totals remain bike-wide and stable.
-- [ ] 3.8 Mark, clear, and re-mark a ride using the expanded editor; confirm the compact row returns after saving and existing labels remain correct.
-- [ ] 3.9 Review desktop and mobile widths for overflow, readable metric alignment, visible keyboard focus, and clear text labels.
+- [x] 3.7 Walk through all-bike and selected-bike activity lists, including a chain filter and a later page, and confirm totals remain bike-wide and stable.
+- [x] 3.8 Mark, clear, and re-mark a ride using the expanded editor; confirm the compact row returns after saving and existing labels remain correct.
+- [x] 3.9 Review desktop and mobile widths for overflow, readable metric alignment, visible keyboard focus, and clear text labels.
