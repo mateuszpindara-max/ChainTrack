@@ -211,24 +211,24 @@ Plan nie wprowadza cyklicznego odpytywania, nowych zapytań ani dodatkowej telem
 
 #### Manual
 
-- [x] 1.1 Właściciel potwierdza w panelach, że diagnozowany Worker i projekt Supabase są właściwym środowiskiem produkcyjnym.
-- [x] 1.2 Zebrano dokładny, zanonimizowany status/błąd odczytu `strava_connections` i ustalono, czy błędne są też odczyty rowerów lub łańcuchów.
-- [x] 1.3 Zapisano status wymaganych migracji, schematu i polityki RLS wyłącznie na podstawie widocznych danych; niczego nie zmieniono.
-- [x] 1.4 Wyniki pozwalają przypisać następny krok do konkretnej kategorii albo jasno wskazują brak dostępu/dowodów wymagający eskalacji.
+- [x] 1.1 Właściciel potwierdza w panelach, że diagnozowany Worker i projekt Supabase są właściwym środowiskiem produkcyjnym. — 9adc6e1
+- [x] 1.2 Zebrano dokładny, zanonimizowany status/błąd odczytu `strava_connections` i ustalono, czy błędne są też odczyty rowerów lub łańcuchów. — 9adc6e1
+- [x] 1.3 Zapisano status wymaganych migracji, schematu i polityki RLS wyłącznie na podstawie widocznych danych; niczego nie zmieniono. — 9adc6e1
+- [x] 1.4 Wyniki pozwalają przypisać następny krok do konkretnej kategorii albo jasno wskazują brak dostępu/dowodów wymagający eskalacji. — 9adc6e1
 
 ### Phase 2: Napraw potwierdzoną przyczynę
 
 #### Automated
 
-- [ ] 2.1 Jeśli zmieniono kod: właściwy test jednostkowy/regresyjny przechodzi oraz `npm run check` i `npm run lint` przechodzą.
-- [ ] 2.2 Jeśli zmieniono migrację: `npx supabase db reset` na lokalnej bazie odtwarza wszystkie migracje, a `npm run test` przechodzi; żadna z tych komend nie może wskazywać na produkcję.
-- [ ] 2.3 Zmiany w repozytorium nie zawierają wartości sekretów, project ref w miejscu wymagającym tajemnicy, tokenów, cookies ani klucza `service_role`.
+- [x] 2.1 Jeśli zmieniono kod: właściwy test jednostkowy/regresyjny przechodzi oraz `npm run check` i `npm run lint` przechodzą.
+- [x] 2.2 Jeśli zmieniono migrację: `npx supabase db reset` na lokalnej bazie odtwarza wszystkie migracje, a `npm run test` przechodzi; żadna z tych komend nie może wskazywać na produkcję.
+- [x] 2.3 Zmiany w repozytorium nie zawierają wartości sekretów, project ref w miejscu wymagającym tajemnicy, tokenów, cookies ani klucza `service_role`.
 
 #### Manual
 
-- [ ] 2.4 Właściciel zatwierdza oddzielnie każdą zmianę produkcyjnego sekretu, konfiguracji, schematu/RLS lub deployu przed jej wykonaniem.
-- [ ] 2.5 Naprawa odpowiada bezpośrednio zanonimizowanemu błędowi; nie zmieniono niezwiązanych sekretów, tabel ani polityk.
-- [ ] 2.6 Po zatwierdzonej zmianie dashboard jest sprawdzony na właściwym koncie produkcyjnym, a stan odczytu odnotowany bez danych wrażliwych.
+- [x] 2.4 Właściciel zatwierdza oddzielnie każdą zmianę produkcyjnego sekretu, konfiguracji, schematu/RLS lub deployu przed jej wykonaniem.
+- [x] 2.5 Naprawa odpowiada bezpośrednio zanonimizowanemu błędowi; nie zmieniono niezwiązanych sekretów, tabel ani polityk.
+- [x] 2.6 Po zatwierdzonej zmianie dashboard jest sprawdzony na właściwym koncie produkcyjnym, a stan odczytu odnotowany bez danych wrażliwych.
 
 ### Phase 3: Potwierdź przepływ i utrwal runbook
 
