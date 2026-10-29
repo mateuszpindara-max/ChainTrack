@@ -1,7 +1,7 @@
 ---
 change_id: production-strava-status
 title: Diagnose unavailable production Strava status
-status: preparing
+status: implementing
 created: 2026-10-29
 updated: 2026-10-29
 archived_at: null
