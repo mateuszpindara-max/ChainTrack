@@ -270,15 +270,15 @@ Ship the additive migration before deploying code that selects the new view colu
 
 #### Automated
 
-- [x] 3.1 Database tests pass: `npx supabase test db`
-- [x] 3.2 Unit tests pass: `npm test`
-- [x] 3.3 Type checking passes: `npm run check`
-- [x] 3.4 Linting passes: `npm run lint`
-- [x] 3.5 Production build succeeds: `npm run build`
-- [x] 3.6 Auth-flow smoke check passes against a running local server: `npm run smoke`
+- [x] 3.1 Database tests pass: `npx supabase test db` — d310a47
+- [x] 3.2 Unit tests pass: `npm test` — d310a47
+- [x] 3.3 Type checking passes: `npm run check` — d310a47
+- [x] 3.4 Linting passes: `npm run lint` — d310a47
+- [x] 3.5 Production build succeeds: `npm run build` — d310a47
+- [x] 3.6 Auth-flow smoke check passes against a running local server: `npm run smoke` — d310a47
 
 #### Manual
 
-- [x] 3.7 Walk through all-bike and selected-bike activity lists, including a chain filter and a later page, and confirm totals remain bike-wide and stable.
-- [x] 3.8 Mark, clear, and re-mark a ride using the expanded editor; confirm the compact row returns after saving and existing labels remain correct.
-- [x] 3.9 Review desktop and mobile widths for overflow, readable metric alignment, visible keyboard focus, and clear text labels.
+- [x] 3.7 Walk through all-bike and selected-bike activity lists, including a chain filter and a later page, and confirm totals remain bike-wide and stable. — d310a47
+- [x] 3.8 Mark, clear, and re-mark a ride using the expanded editor; confirm the compact row returns after saving and existing labels remain correct. — d310a47
+- [x] 3.9 Review desktop and mobile widths for overflow, readable metric alignment, visible keyboard focus, and clear text labels. — d310a47

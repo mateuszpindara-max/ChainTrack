@@ -1,7 +1,7 @@
 ---
 change_id: activity-list-presentation
 title: Improve activity list presentation
-status: implementing
+status: implemented
 created: 2026-10-29
 updated: 2026-10-29
 archived_at: null
