@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, Sparkles, X } from "lucide-react";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import YearSummary from "@/components/YearSummary";
 import { useDashboardData } from "@/components/hooks/useDashboardData";
@@ -101,7 +101,9 @@ export default function ActivityDashboard({
   const [loadingAction, setLoadingAction] = useState<"initial" | "new" | "repair" | null>(null);
   const [result, setResult] = useState<ImportResponse | null>(null);
   const waxingSelectRefs = useRef(new Map<string, HTMLSelectElement>());
+  const waxingActionRefs = useRef(new Map<string, HTMLButtonElement>());
   const waxingFocusRequest = useRef<string | null>(null);
+  const [editingActivityId, setEditingActivityId] = useState<string | null>(null);
   const selection = data.dashboard.selection;
   const selectedBikeId = selection.kind === "activities" ? selection.bikeId : null;
   const selectedBikeTitle =
@@ -124,11 +126,19 @@ export default function ActivityDashboard({
   }, [drawerOpen]);
 
   useEffect(() => {
+    if (editingActivityId === null) return;
+    waxingSelectRefs.current.get(editingActivityId)?.focus();
+  }, [editingActivityId]);
+
+  useEffect(() => {
     const activityId = waxingFocusRequest.current;
     if (data.waxingMarkSave.isBusy || activityId === null) return;
     waxingFocusRequest.current = null;
-    waxingSelectRefs.current.get(activityId)?.focus();
-  }, [data.waxingMarkSave.isBusy]);
+    if (data.waxingMarkSave.error === null) {
+      setEditingActivityId((current) => (current === activityId ? null : current));
+    }
+    waxingActionRefs.current.get(activityId)?.focus();
+  }, [data.waxingMarkSave.error, data.waxingMarkSave.isBusy]);
 
   function closeDrawer() {
     setDrawerOpen(false);
@@ -486,87 +496,150 @@ export default function ActivityDashboard({
               {data.dashboard.activities.length > 0 && (
                 <ul className="divide-y divide-white/10">
                   {data.dashboard.activities.map((activity: ActivityView) => (
-                    <li
-                      key={activity.id}
-                      className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-6"
-                    >
-                      <div className="min-w-0">
-                        <h3 className="truncate text-base font-medium text-white">{activity.name}</h3>
-                        <p className="mt-1 text-sm text-blue-100/60">{activity.bikeName}</p>
-                        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-blue-100/75">
-                          <span>
-                            {activity.isWaxingStart && activity.chainId === null
-                              ? "Chain removed"
-                              : (activity.chainName ?? "No chain")}
+                    <li key={activity.id} className="grid gap-2.5 py-4">
+                      <div className="flex min-w-0 items-start justify-between gap-3">
+                        <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+                          <h3 className="min-w-0 flex-1 truncate text-base font-medium text-white">{activity.name}</h3>
+                          <span className="shrink-0 text-sm text-blue-100/60">
+                            <LocalActivityDate value={activity.startedAt} />
                           </span>
-                          {activity.isWaxingStart && <span className="font-medium text-orange-200">Fresh wax</span>}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-blue-100/75 sm:justify-end">
-                        <span className="font-medium text-white">{formatDistanceKm(activity.distanceMeters)}</span>
-                        <LocalActivityDate value={activity.startedAt} />
-                      </div>
-                      <div className="grid gap-1 sm:col-span-2 lg:col-span-1 lg:min-w-56">
-                        <label htmlFor={`waxing-mark-${activity.id}`} className="text-sm font-medium text-blue-100/85">
-                          Fresh-wax mark for {activity.name}
-                        </label>
-                        <select
+                        </div>
+                        <button
                           ref={(element) => {
-                            if (element) waxingSelectRefs.current.set(activity.id, element);
-                            else waxingSelectRefs.current.delete(activity.id);
+                            if (element) waxingActionRefs.current.set(activity.id, element);
+                            else {
+                              waxingActionRefs.current.delete(activity.id);
+                            }
                           }}
-                          id={`waxing-mark-${activity.id}`}
-                          value={activity.isWaxingStart ? (activity.chainId ?? "chain-removed") : ""}
-                          onChange={(event) => {
-                            waxingFocusRequest.current = activity.id;
-                            void data.saveWaxingMark(activity.id, event.currentTarget.value || null);
+                          type="button"
+                          onClick={() => {
+                            setEditingActivityId((current) => (current === activity.id ? null : activity.id));
                           }}
-                          disabled={data.waxingMarkSave.isBusy}
-                          aria-busy={data.waxingMarkSave.isBusy}
-                          aria-describedby={
-                            data.waxingMarkSave.activityId === activity.id && data.waxingMarkSave.error
-                              ? `waxing-mark-error-${activity.id}`
-                              : undefined
+                          aria-label={`${editingActivityId === activity.id ? "Close" : "Edit"} fresh-wax mark for ${activity.name}`}
+                          aria-expanded={editingActivityId === activity.id}
+                          aria-controls={
+                            editingActivityId === activity.id ? `waxing-mark-editor-${activity.id}` : undefined
                           }
-                          className="min-h-11 w-full rounded-md border border-white/20 bg-slate-950/60 px-3 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-wait disabled:opacity-60"
+                          title={`${editingActivityId === activity.id ? "Close" : "Edit"} fresh-wax mark`}
+                          disabled={data.waxingMarkSave.isBusy}
+                          className="grid size-10 shrink-0 place-items-center rounded-md border border-white/20 text-orange-200 transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-wait disabled:opacity-60"
                         >
-                          <option value="">Not a fresh-wax ride</option>
-                          {activity.isWaxingStart && activity.chainId === null && (
-                            <option value="chain-removed" disabled>
-                              Chain removed
-                            </option>
-                          )}
-                          {data.chains.items.map((chain) => (
-                            <option key={chain.id} value={chain.id}>
-                              {chain.name}
-                            </option>
-                          ))}
-                        </select>
-                        {data.waxingMarkSave.activityId === activity.id &&
-                          (data.waxingMarkSave.phase === "saving" || data.waxingMarkSave.phase === "refreshing") && (
-                            <p className="text-sm text-blue-100/70" role="status" aria-live="polite">
-                              {data.waxingMarkSave.phase === "saving"
-                                ? "Saving fresh-wax mark..."
-                                : "Refreshing rides..."}
-                            </p>
-                          )}
-                        {data.waxingMarkSave.activityId === activity.id && data.waxingMarkSave.error && (
-                          <div id={`waxing-mark-error-${activity.id}`} className="text-sm text-rose-200" role="alert">
-                            <p>{data.waxingMarkSave.error}</p>
-                            {data.waxingMarkSave.canRetryRefresh && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  void data.retryWaxingRefresh();
-                                }}
-                                className="mt-1 min-h-10 rounded px-2 py-1 font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
-                              >
-                                Retry refresh
-                              </button>
-                            )}
-                          </div>
-                        )}
+                          <Sparkles aria-hidden="true" size={17} />
+                        </button>
                       </div>
+                      <div>
+                        <span className="inline-flex max-w-full items-center rounded-sm border border-white/15 bg-white/5 px-2 py-0.5 text-xs font-medium text-blue-100/85">
+                          {activity.bikeName}
+                        </span>
+                      </div>
+                      <dl className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4 sm:gap-x-5">
+                        <div className="flex min-w-0 items-center justify-between gap-2">
+                          <dt className="shrink-0 text-xs font-medium text-blue-100/55">Chain</dt>
+                          <dd className="min-w-0">
+                            <span
+                              className="inline-flex max-w-full truncate rounded-sm border border-white/15 bg-white/5 px-1.5 py-0.5 text-xs font-medium text-blue-50"
+                              title={
+                                activity.isWaxingStart && activity.chainId === null
+                                  ? "Chain removed"
+                                  : (activity.chainName ?? "No chain")
+                              }
+                            >
+                              {activity.isWaxingStart && activity.chainId === null
+                                ? "Chain removed"
+                                : (activity.chainName ?? "No chain")}
+                            </span>
+                          </dd>
+                        </div>
+                        <div className="flex min-w-0 items-center justify-between gap-2">
+                          <dt className="shrink-0 text-xs font-medium text-blue-100/55">Fresh wax</dt>
+                          <dd>
+                            <span className="inline-flex rounded-sm border border-orange-200/25 bg-orange-300/10 px-1.5 py-0.5 text-xs font-medium text-orange-100">
+                              {activity.isWaxingStart ? "Marked" : "Not marked"}
+                            </span>
+                          </dd>
+                        </div>
+                        <div className="flex min-w-0 items-center justify-between gap-2">
+                          <dt className="shrink-0 text-xs font-medium text-blue-100/55">Ride</dt>
+                          <dd className="text-right text-sm font-medium text-white">
+                            {formatDistanceKm(activity.distanceMeters)}
+                          </dd>
+                        </div>
+                        <div className="flex min-w-0 items-center justify-between gap-2">
+                          <dt className="shrink-0 text-xs font-medium text-blue-100/55">Bike total</dt>
+                          <dd className="text-right text-sm font-medium text-white">
+                            {activity.cumulativeDistanceMeters == null
+                              ? "N/A"
+                              : formatDistanceKm(activity.cumulativeDistanceMeters)}
+                          </dd>
+                        </div>
+                      </dl>
+                      {editingActivityId === activity.id && (
+                        <div id={`waxing-mark-editor-${activity.id}`} className="grid gap-1 sm:max-w-sm">
+                          <label
+                            htmlFor={`waxing-mark-${activity.id}`}
+                            className="text-sm font-medium text-blue-100/85"
+                          >
+                            Fresh-wax mark for {activity.name}
+                          </label>
+                          <select
+                            ref={(element) => {
+                              if (element) waxingSelectRefs.current.set(activity.id, element);
+                              else waxingSelectRefs.current.delete(activity.id);
+                            }}
+                            id={`waxing-mark-${activity.id}`}
+                            value={activity.isWaxingStart ? (activity.chainId ?? "chain-removed") : ""}
+                            onChange={(event) => {
+                              waxingFocusRequest.current = activity.id;
+                              void data.saveWaxingMark(activity.id, event.currentTarget.value || null);
+                            }}
+                            disabled={data.waxingMarkSave.isBusy}
+                            aria-busy={data.waxingMarkSave.isBusy}
+                            aria-describedby={
+                              data.waxingMarkSave.activityId === activity.id && data.waxingMarkSave.error
+                                ? `waxing-mark-error-${activity.id}`
+                                : undefined
+                            }
+                            className="min-h-11 w-full rounded-md border border-white/20 bg-slate-950/60 px-3 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-wait disabled:opacity-60"
+                          >
+                            <option value="">Not a fresh-wax ride</option>
+                            {activity.isWaxingStart && activity.chainId === null && (
+                              <option value="chain-removed" disabled>
+                                Chain removed
+                              </option>
+                            )}
+                            {data.chains.items.map((chain) => (
+                              <option key={chain.id} value={chain.id}>
+                                {chain.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      {data.waxingMarkSave.activityId === activity.id &&
+                        (data.waxingMarkSave.phase === "saving" || data.waxingMarkSave.phase === "refreshing") && (
+                          <p className="text-sm text-blue-100/70" role="status" aria-live="polite">
+                            {data.waxingMarkSave.phase === "saving"
+                              ? "Saving fresh-wax mark..."
+                              : "Refreshing rides..."}
+                          </p>
+                        )}
+                      {data.waxingMarkSave.activityId === activity.id && data.waxingMarkSave.error && (
+                        <div id={`waxing-mark-error-${activity.id}`} className="text-sm text-rose-200" role="alert">
+                          <p>{data.waxingMarkSave.error}</p>
+                          {data.waxingMarkSave.canRetryRefresh && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                waxingFocusRequest.current = activity.id;
+                                void data.retryWaxingRefresh();
+                              }}
+                              className="mt-1 min-h-10 rounded px-2 py-1 font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
+                            >
+                              Retry refresh
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>

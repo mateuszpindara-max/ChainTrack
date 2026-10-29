@@ -239,32 +239,32 @@ Ship the additive migration before deploying code that selects the new view colu
 
 #### Automated
 
-- [x] 1.1 Database migrations apply cleanly: `npx supabase db reset`
-- [x] 1.2 Database tests pass, including the updated chain-waxing view test: `npx supabase test db`
-- [x] 1.3 Unit tests pass: `npm test`
-- [x] 1.4 Type checking passes: `npm run check`
-- [x] 1.5 Linting passes: `npm run lint`
+- [x] 1.1 Database migrations apply cleanly: `npx supabase db reset` — 4f3a606
+- [x] 1.2 Database tests pass, including the updated chain-waxing view test: `npx supabase test db` — 4f3a606
+- [x] 1.3 Unit tests pass: `npm test` — 4f3a606
+- [x] 1.4 Type checking passes: `npm run check` — 4f3a606
+- [x] 1.5 Linting passes: `npm run lint` — 4f3a606
 
 #### Manual
 
-- [x] 1.6 A ride's cumulative value includes its own distance and every earlier ride on that bike, but no ride on another bike.
-- [x] 1.7 Filtering by chain or loading a later activity page does not change a ride's cumulative value.
-- [x] 1.8 Equal-time activities accrue in ascending activity-ID order while the list remains newest-first.
+- [x] 1.6 A ride's cumulative value includes its own distance and every earlier ride on that bike, but no ride on another bike. — 4f3a606
+- [x] 1.7 Filtering by chain or loading a later activity page does not change a ride's cumulative value. — 4f3a606
+- [x] 1.8 Equal-time activities accrue in ascending activity-ID order while the list remains newest-first. — 4f3a606
 
 ### Phase 2: Activity Row and Mark Editor
 
 #### Automated
 
-- [ ] 2.1 Type checking passes: `npm run check`
-- [ ] 2.2 Linting passes: `npm run lint`
-- [ ] 2.3 Unit tests pass: `npm test`
+- [x] 2.1 Type checking passes: `npm run check`
+- [x] 2.2 Linting passes: `npm run lint`
+- [x] 2.3 Unit tests pass: `npm test`
 
 #### Manual
 
-- [ ] 2.4 The title/date, bike, and metric/status rows follow the approved order with labels on the left and values on the right.
-- [ ] 2.5 The full select is absent until its icon is activated; activating the icon expands the editor and set, clear, save, and error states still work.
-- [ ] 2.6 Keyboard-only users can open and operate the editor, receive save/error announcements, and return focus to the row action.
-- [ ] 2.7 The row remains readable without horizontal overflow at mobile widths and uses the existing dashboard visual language.
+- [x] 2.4 The title/date, bike, and metric/status rows follow the approved order with labels on the left and values on the right.
+- [x] 2.5 The full select is absent until its icon is activated; activating the icon expands the editor and set, clear, save, and error states still work.
+- [x] 2.6 Keyboard-only users can open and operate the editor, receive save/error announcements, and return focus to the row action.
+- [x] 2.7 The row remains readable without horizontal overflow at mobile widths and uses the existing dashboard visual language.
 
 ### Phase 3: End-to-End Acceptance
 
