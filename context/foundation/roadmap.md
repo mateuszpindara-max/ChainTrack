@@ -3,7 +3,7 @@ project: ChainTrack
 version: 1
 status: draft
 created: 2026-09-28
-updated: 2026-10-23
+updated: 2026-10-16
 prd_version: 2
 main_goal: speed
 top_blocker: external
@@ -41,11 +41,11 @@ Właściciel wielu rowerów ma trudność z pamiętaniem, ile kilometrów przeje
 
 | ID   | Change ID                     | Outcome (user can …)                                            | Prerequisites | PRD refs                              | Status   |
 | ---- | ----------------------------- | --------------------------------------------------------------- | ------------- | ------------------------------------- | -------- |
-| S-01 | import-bike-linked-activities | importować i przeglądać nazwę, dystans, datę i rower aktywności | —             | FR-001, FR-002                        | done |
-| S-02 | refresh-activities-safely     | ręcznie importować nowe wpisy niezależnie od daty albo naprawiać całą historię; ukrywać niedopasowane i usuwać skasowane wraz z danymi zależnymi po pełnej weryfikacji, bez duplikatów | S-01          | FR-003                                | done |
-| S-03 | create-chain                  | tworzyć własny łańcuch                                          | —             | FR-004                                | done |
-| S-04 | assign-chain-and-mark-waxing  | oznaczyć pierwszą jazdę po świeżym woskowaniu i pokazywać jej łańcuch na kolejnych jazdach tego roweru aż do następnego oznaczenia; filtrować aktywności po łańcuchu | S-01, S-03    | US-01, FR-005, FR-006, FR-008, Access Control | done |
-| S-05 | filter-activities             | filtrować aktywności po rowerze                                  | S-01          | FR-007                                | done |
+| S-01 | import-bike-linked-activities | importować i przeglądać nazwę, dystans, datę i rower aktywności | —             | FR-001, FR-002                        | in-progress |
+| S-02 | refresh-activities-safely     | ręcznie importować nowe wpisy niezależnie od daty albo naprawiać całą historię; ukrywać niedopasowane i usuwać skasowane wraz z danymi zależnymi po pełnej weryfikacji, bez duplikatów | S-01          | FR-003                                | in-progress |
+| S-03 | create-chain                  | tworzyć własny łańcuch                                          | —             | FR-004                                | ready    |
+| S-04 | assign-chain-and-mark-waxing  | przypisać łańcuch do aktywności i oznaczyć woskowanie           | S-01, S-03    | US-01, FR-005, FR-006, Access Control | proposed |
+| S-05 | filter-activities             | filtrować aktywności po rowerze i łańcuchu                      | S-01, S-04    | FR-007, FR-008                        | proposed |
 
 ## Streams
 
@@ -84,7 +84,7 @@ Brak osobnych fundamentów. Uwierzytelnianie i wdrożenie są już obecne; minim
 - **Unknowns:**
   - Czy dostęp do Strava i wymagane dane aplikacji są gotowe do użycia? — Owner: user. Block: yes.
 - **Risk:** Bez działającego dostępu do źródła aktywności nie da się zweryfikować najważniejszej zależności całego przepływu.
-- **Status:** done
+- **Status:** in-progress
 
 ### S-02: Ręczna aktualizacja aktywności
 
@@ -96,7 +96,7 @@ Brak osobnych fundamentów. Uwierzytelnianie i wdrożenie są już obecne; minim
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Niejasny wynik błędnej aktualizacji lub powielone wpisy podważą zaufanie do danych.
-- **Status:** done
+- **Status:** in-progress
 
 ### S-03: Tworzenie łańcucha
 
@@ -108,31 +108,31 @@ Brak osobnych fundamentów. Uwierzytelnianie i wdrożenie są już obecne; minim
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** To niezależny, niewielki krok, który odblokowuje przypisywanie bez czekania na zakończenie importu.
-- **Status:** done
+- **Status:** ready
 
-### S-04: Przypisanie łańcucha, oznaczenie woskowania i filtrowanie po łańcuchu
+### S-04: Przypisanie łańcucha i oznaczenie woskowania
 
-- **Outcome:** Użytkownik może oznaczyć pierwszą jazdę po świeżym woskowaniu. Ten łańcuch obowiązuje na tej i kolejnych jazdach tego samego roweru aż do następnego oznaczenia; użytkownik może filtrować aktywności po łańcuchu.
+- **Outcome:** Użytkownik może przypisać utworzony łańcuch do aktywności i zapisać, że na jej końcu wykonał woskowanie.
 - **Change ID:** `assign-chain-and-mark-waxing`
-- **PRD refs:** US-01, FR-005, FR-006, FR-008, Access Control
+- **PRD refs:** US-01, FR-005, FR-006, Access Control
 - **Prerequisites:** S-01, S-03
 - **Parallel with:** S-02
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Błędne powiązanie łańcucha lub woskowania z aktywnością uniemożliwi wiarygodne śledzenie przebiegu.
-- **Status:** done
+- **Status:** proposed
 
-### S-05: Filtrowanie aktywności po rowerze
+### S-05: Filtrowanie aktywności
 
-- **Outcome:** Użytkownik może zawęzić listę aktywności do wybranego roweru i zobaczyć podsumowanie jazdy w bieżącym roku.
+- **Outcome:** Użytkownik może zawęzić listę aktywności do wybranego roweru lub łańcucha.
 - **Change ID:** `filter-activities`
-- **PRD refs:** FR-007
-- **Prerequisites:** S-01
+- **PRD refs:** FR-007, FR-008
+- **Prerequisites:** S-01, S-04
 - **Parallel with:** S-02
 - **Blockers:** —
 - **Unknowns:** —
-- **Risk:** Filtr i podsumowanie muszą uwzględniać aktywności przypisane do roweru oraz granice bieżącego lokalnego roku.
-- **Status:** done
+- **Risk:** Filtry muszą uwzględniać zapisane przypisania, aby nie ukrywać aktywności w sposób mylący.
+- **Status:** proposed
 
 ## Backlog Handoff
 
@@ -141,8 +141,8 @@ Brak osobnych fundamentów. Uwierzytelnianie i wdrożenie są już obecne; minim
 | S-01       | `import-bike-linked-activities` | Import and browse bike-linked activities | no                    | Confirm Strava access and application data. |
 | S-02       | `refresh-activities-safely`     | Refresh activities without duplicates    | no                    | Requires S-01.                              |
 | S-03       | `create-chain`                  | Create a chain                           | yes                   | Run `/10x-plan create-chain`.               |
-| S-04       | `assign-chain-and-mark-waxing`  | Assign chains, record waxing, and filter by chain | no                    | Requires S-01 and S-03.                     |
-| S-05       | `filter-activities`             | Filter activities by bike                 | no                    | Year overview and bike navigation are being planned; chain filtering belongs to S-04. |
+| S-04       | `assign-chain-and-mark-waxing`  | Assign chains and record waxing          | no                    | Requires S-01 and S-03.                     |
+| S-05       | `filter-activities`             | Filter activities by bike and chain      | no                    | Requires S-01 and S-04.                     |
 
 ## Open Roadmap Questions
 
@@ -158,9 +158,3 @@ Brak pytań przekrojowych. Potwierdzenie dostępu do Strava blokujące `S-01` zn
 ## Milestone History
 
 ## Done
-
-- **S-01: Użytkownik widzi aktywności przypisane do rowerów.** — Archived 2026-10-16 → `context/archive/2026-09-28-import-bike-linked-activities/`. Lesson: —.
-- **S-02: Użytkownik może ręcznie importować aktywności nowo widoczne w Stravie niezależnie od daty albo naprawić całą historię, odświeżając obecnie zapisywane pola i przypisania roweru. Naprawa zachowuje, ale ukrywa aktywności nadal obecne bez jednoznacznego roweru; aktywności skasowane w Stravie usuwa fizycznie wraz z danymi zależnymi dopiero po pełnym, zweryfikowanym przebiegu, bez duplikatów.** — Archived 2026-10-18 → `context/archive/2026-10-16-refresh-activities-safely/`. Lesson: —.
-- **S-03: Użytkownik może utworzyć własny łańcuch, który będzie można przypisać do aktywności.** — Archived 2026-10-23 → `context/archive/2026-10-22-create-chain/`. Lesson: —.
-- **S-04: Użytkownik może oznaczyć pierwszą jazdę po świeżym woskowaniu. Ten łańcuch obowiązuje na tej i kolejnych jazdach tego samego roweru aż do następnego oznaczenia; użytkownik może filtrować aktywności po łańcuchu.** — Archived 2026-10-23 → `context/archive/2026-10-23-assign-chain-and-mark-waxing/`. Lesson: —.
-- **S-05: Użytkownik może zawęzić listę aktywności do wybranego roweru i zobaczyć podsumowanie jazdy w bieżącym roku.** — Archived 2026-10-23 → `context/archive/2026-10-23-filter-activities/`. Lesson: —.
