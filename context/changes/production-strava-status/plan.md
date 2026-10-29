@@ -220,26 +220,26 @@ Plan nie wprowadza cyklicznego odpytywania, nowych zapytań ani dodatkowej telem
 
 #### Automated
 
-- [x] 2.1 Jeśli zmieniono kod: właściwy test jednostkowy/regresyjny przechodzi oraz `npm run check` i `npm run lint` przechodzą.
-- [x] 2.2 Jeśli zmieniono migrację: `npx supabase db reset` na lokalnej bazie odtwarza wszystkie migracje, a `npm run test` przechodzi; żadna z tych komend nie może wskazywać na produkcję.
-- [x] 2.3 Zmiany w repozytorium nie zawierają wartości sekretów, project ref w miejscu wymagającym tajemnicy, tokenów, cookies ani klucza `service_role`.
+- [x] 2.1 Jeśli zmieniono kod: właściwy test jednostkowy/regresyjny przechodzi oraz `npm run check` i `npm run lint` przechodzą. — 1982fb3
+- [x] 2.2 Jeśli zmieniono migrację: `npx supabase db reset` na lokalnej bazie odtwarza wszystkie migracje, a `npm run test` przechodzi; żadna z tych komend nie może wskazywać na produkcję. — 1982fb3
+- [x] 2.3 Zmiany w repozytorium nie zawierają wartości sekretów, project ref w miejscu wymagającym tajemnicy, tokenów, cookies ani klucza `service_role`. — 1982fb3
 
 #### Manual
 
-- [x] 2.4 Właściciel zatwierdza oddzielnie każdą zmianę produkcyjnego sekretu, konfiguracji, schematu/RLS lub deployu przed jej wykonaniem.
-- [x] 2.5 Naprawa odpowiada bezpośrednio zanonimizowanemu błędowi; nie zmieniono niezwiązanych sekretów, tabel ani polityk.
-- [x] 2.6 Po zatwierdzonej zmianie dashboard jest sprawdzony na właściwym koncie produkcyjnym, a stan odczytu odnotowany bez danych wrażliwych.
+- [x] 2.4 Właściciel zatwierdza oddzielnie każdą zmianę produkcyjnego sekretu, konfiguracji, schematu/RLS lub deployu przed jej wykonaniem. — 1982fb3
+- [x] 2.5 Naprawa odpowiada bezpośrednio zanonimizowanemu błędowi; nie zmieniono niezwiązanych sekretów, tabel ani polityk. — 1982fb3
+- [x] 2.6 Po zatwierdzonej zmianie dashboard jest sprawdzony na właściwym koncie produkcyjnym, a stan odczytu odnotowany bez danych wrażliwych. — 1982fb3
 
 ### Phase 3: Potwierdź przepływ i utrwal runbook
 
 #### Automated
 
-- [ ] 3.1 Jeśli zmieniono kod: `npm run test`, `npm run check` i `npm run lint` przechodzą.
-- [ ] 3.2 Dokumentacja nie zawiera sekretów ani nie sugeruje `service_role`, niezatwierdzonego deployu, zdalnego `db reset` ani użycia lokalnego projektu jako produkcyjnego.
-- [ ] 3.3 `git diff --check` przechodzi.
+- [x] 3.1 Jeśli zmieniono kod: `npm run test`, `npm run check` i `npm run lint` przechodzą.
+- [x] 3.2 Dokumentacja nie zawiera sekretów ani nie sugeruje `service_role`, niezatwierdzonego deployu, zdalnego `db reset` ani użycia lokalnego projektu jako produkcyjnego.
+- [x] 3.3 `git diff --check` przechodzi.
 
 #### Manual
 
-- [ ] 3.4 Zalogowany użytkownik widzi prawidłowy status połączenia; brak rekordu nie jest mylony z błędem odczytu.
-- [ ] 3.5 Jeśli OAuth był objęty problemem, autoryzacja Stravy kończy się powrotem do właściwego hosta, wymaganymi scope'ami i zapisanym połączeniem; początkowy import jest sprawdzany tylko wtedy, gdy to połączenie działa.
+- [x] 3.4 Zalogowany użytkownik widzi prawidłowy status połączenia; brak rekordu nie jest mylony z błędem odczytu.
+- [x] 3.5 Jeśli OAuth był objęty problemem, autoryzacja Stravy kończy się powrotem do właściwego hosta, wymaganymi scope'ami i zapisanym połączeniem; początkowy import jest sprawdzany tylko wtedy, gdy to połączenie działa.
 - [ ] 3.6 Właściciel może przejść nową sekcję runbooka bez wklejania sekretów do rozmowy i bez wykonania niezatwierdzonej operacji produkcyjnej.
