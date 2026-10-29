@@ -5,10 +5,27 @@ import {
   activitiesAfterSync,
   buildStravaSyncRequest,
   isStravaSyncMode,
+  isStravaCallbackStatus,
+  stravaCallbackDenialStatus,
+  stravaCallbackRedirect,
   syncCountSummary,
   syncResultMessage,
   type StravaSyncResponse,
 } from "./sync-contract.ts";
+
+void test("callback outcomes use only fixed safe dashboard statuses", () => {
+  assert.equal(isStravaCallbackStatus("connected"), true);
+  assert.equal(isStravaCallbackStatus("denied"), true);
+  assert.equal(isStravaCallbackStatus("failed"), true);
+  assert.equal(isStravaCallbackStatus("code=fixture-code&state=fixture-state"), false);
+  assert.equal(stravaCallbackDenialStatus(true, true, true), "denied");
+  assert.equal(stravaCallbackDenialStatus(false, false, true), "denied");
+  assert.equal(stravaCallbackDenialStatus(false, true, false), "denied");
+  assert.equal(stravaCallbackDenialStatus(false, true, true), null);
+  assert.equal(stravaCallbackRedirect("denied"), "/dashboard?strava=denied");
+  assert.equal(stravaCallbackRedirect("failed"), "/dashboard?strava=failed");
+  assert.equal(stravaCallbackRedirect("connected"), "/dashboard?strava=connected");
+});
 
 void test("sync requests preserve the selected mode and continue only that mode's active run", () => {
   const newRun = { id: "new-run", mode: "new" as const, status: "partial" as const };

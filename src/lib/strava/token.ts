@@ -1,4 +1,9 @@
-import { decryptToken, encryptToken, type StravaConfiguration } from "./security.ts";
+import {
+  decryptToken,
+  encryptToken,
+  StravaAuthorizationError,
+  type StravaConfiguration,
+} from "./security.ts";
 
 export interface StravaTokenConnection {
   access_token_ciphertext: string;
@@ -51,6 +56,7 @@ export async function refreshStravaAccessToken(
       refresh_token: refreshToken,
     }),
   });
+  if (response.status === 401 || response.status === 403) throw new StravaAuthorizationError();
   if (!response.ok) throw new Error("Strava token refresh failed");
 
   const result = await response.json();

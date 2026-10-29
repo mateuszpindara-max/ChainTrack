@@ -1,3 +1,5 @@
+import { isStravaAuthorizationError, StravaAuthorizationError } from "./security.ts";
+
 export const STRAVA_ACTIVITY_PAGE_SIZE = 200;
 export const STRAVA_ACTIVITY_PAGES_PER_IMPORT = 5;
 export const STRAVA_ACTIVITY_PAGES_PER_SYNC = 5;
@@ -31,6 +33,7 @@ export interface ImportResult extends ActivityUpsertCounts {
   skipped: number;
   nextPage: number;
   message?: string;
+  authorizationFailure?: true;
 }
 
 export interface NewActivitySyncRun {
@@ -72,6 +75,7 @@ export interface NewActivitySyncResult {
   nextPage: number;
   status: "running" | "partial" | "completed";
   message?: string;
+  authorizationFailure?: true;
 }
 
 export interface RepairActivitySyncRun {
@@ -136,6 +140,7 @@ export interface RepairActivitySyncResult {
   status: "running" | "partial" | "completed";
   scanComplete: boolean;
   message?: string;
+  authorizationFailure?: true;
 }
 
 interface StravaActivityResponse {
@@ -193,6 +198,7 @@ function assertAthleteIdentity(value: unknown, expectedAthleteId: number): void 
 
 async function fetchJson(url: URL, accessToken: string, fetcher: typeof fetch): Promise<unknown> {
   const response = await fetcher(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (response.status === 401 || response.status === 403) throw new StravaAuthorizationError();
   if (!response.ok) throw new Error("Strava request failed");
   return response.json();
 }
@@ -202,6 +208,7 @@ async function fetchRepairJson(url: URL, accessToken: string, fetcher: typeof fe
     headers: { Authorization: `Bearer ${accessToken}` },
     signal: AbortSignal.timeout(STRAVA_REQUEST_TIMEOUT_MS),
   });
+  if (response.status === 401 || response.status === 403) throw new StravaAuthorizationError();
   if (!response.ok) throw new Error("Strava request failed");
   return response.json();
 }
@@ -279,13 +286,14 @@ export async function importStravaHistory(
       nextPage,
       message: "This import batch is saved. Continue the import to fetch the remaining history.",
     };
-  } catch {
+  } catch (error) {
     const partial = completedPages > 0;
     return {
       outcome: partial ? "partial" : "failed",
       ...counts,
       skipped,
       nextPage,
+      ...(isStravaAuthorizationError(error) ? { authorizationFailure: true as const } : {}),
       message: partial
         ? "Some history was saved, but the import stopped before all pages completed. Retry to continue safely."
         : "The Strava history import could not be completed.",
@@ -401,7 +409,7 @@ export async function syncNewStravaActivities(
       status: currentRun.status,
       message: "This synchronization batch is saved. Continue to scan the remaining Strava activities.",
     };
-  } catch {
+  } catch (error) {
     return {
       outcome: completedPages > 0 ? "partial" : "failed",
       runId: currentRun.id,
@@ -409,6 +417,7 @@ export async function syncNewStravaActivities(
       skipped: currentRun.skippedCount,
       nextPage: currentRun.nextPage,
       status: currentRun.status,
+      ...(isStravaAuthorizationError(error) ? { authorizationFailure: true as const } : {}),
       message:
         completedPages > 0
           ? "Some activities were saved, but Strava stopped responding. Continue from the saved page."
@@ -434,6 +443,7 @@ function repairResult(
   run: RepairActivitySyncRun,
   outcome: RepairActivitySyncResult["outcome"],
   message?: string,
+  authorizationFailure = false,
 ): RepairActivitySyncResult {
   return {
     outcome,
@@ -446,6 +456,7 @@ function repairResult(
     status: run.status,
     scanComplete: run.scanComplete,
     ...(message ? { message } : {}),
+    ...(authorizationFailure ? { authorizationFailure: true } : {}),
   };
 }
 
@@ -536,6 +547,7 @@ export async function syncRepairStravaActivities(
     const foundActivities: StravaActivityResponse[] = [];
     const newlyMissingIds: number[] = [];
     let providerFailure = false;
+    let authorizationFailure = false;
 
     for (const activityId of lookupBatch) {
       try {
@@ -547,12 +559,16 @@ export async function syncRepairStravaActivities(
           newlyMissingIds.push(activityId);
           continue;
         }
+        if (activityResponse.status === 401 || activityResponse.status === 403) {
+          throw new StravaAuthorizationError();
+        }
         if (!activityResponse.ok) throw new Error("Strava activity verification failed");
         const activity = normalizeActivity(await activityResponse.json());
         if (activity.id !== activityId) throw new Error("Strava returned a different activity");
         foundActivities.push(activity);
-      } catch {
+      } catch (error) {
         providerFailure = true;
+        authorizationFailure ||= isStravaAuthorizationError(error);
         break;
       }
     }
@@ -603,7 +619,7 @@ export async function syncRepairStravaActivities(
       const message = providerFailure
         ? "Some Strava activities could not be verified. No unverified activities were removed; continue to retry."
         : "Removal verification is saved. Continue to verify the remaining activities.";
-      return repairResult(currentRun, "partial", message);
+      return repairResult(currentRun, "partial", message, authorizationFailure);
     }
 
     const removedCount = await store.finalizeRun(currentRun.id, currentRun.verificationStep);
@@ -620,7 +636,7 @@ export async function syncRepairStravaActivities(
       removedCount: currentRun.removedCount + removedCount,
     };
     return repairResult(currentRun, "complete");
-  } catch {
+  } catch (error) {
     const partial = completedPages > 0 || currentRun.scanComplete;
     return repairResult(
       currentRun,
@@ -628,6 +644,7 @@ export async function syncRepairStravaActivities(
       partial
         ? "Repair progress is saved, but Strava or storage stopped responding. Continue from the saved progress."
         : "The Strava repair could not start. Retry from the saved progress.",
+      isStravaAuthorizationError(error),
     );
   }
 }

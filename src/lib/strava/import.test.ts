@@ -640,6 +640,7 @@ void test("repair treats authorization, rate-limit, provider, and malformed acti
     assert.equal(result.outcome, "partial");
     assert.equal(store.activities.has(2000 + index), true);
     assert.equal(store.verifiedMissingActivityIds.has(2000 + index), false);
+      assert.equal(result.authorizationFailure, index < 2 ? true : undefined);
   }
 });
 
@@ -722,6 +723,32 @@ void test("returns a failed outcome when no activity page can be saved", async (
   assert.equal(result.updated, 0);
 });
 
+void test("marks only provider authorization rejections for reauthorization", async () => {
+  for (const status of [401, 403]) {
+    const result = await importStravaHistory("fixture-token", new MemoryImportStore(), (input) => {
+      if (inputUrl(input).pathname.endsWith("/athlete")) {
+        return Promise.resolve(new Response(null, { status }));
+      }
+      return Promise.resolve(responseFor([]));
+    });
+    assert.equal(result.authorizationFailure, true);
+  }
+
+  const malformedResult = await importStravaHistory("fixture-token", new MemoryImportStore(), (input) =>
+    Promise.resolve(
+      inputUrl(input).pathname.endsWith("/athlete")
+        ? responseFor({ bikes: [] })
+        : new Response("not-json", { status: 200 }),
+    ),
+  );
+  assert.equal(malformedResult.authorizationFailure, undefined);
+
+  const networkResult = await importStravaHistory("fixture-token", new MemoryImportStore(), () =>
+    Promise.reject(new Error("temporary network failure")),
+  );
+  assert.equal(networkResult.authorizationFailure, undefined);
+});
+
 void test("discovers an old-dated activity once and leaves an existing activity unchanged", async () => {
   const store = new MemoryNewActivitySyncStore();
   const existing = {
@@ -774,6 +801,26 @@ void test("new sync refuses a provider athlete different from the expected histo
   assert.equal(result.outcome, "failed");
   assert.equal(store.activities.size, 0);
   assert.equal(store.run.nextPage, 1);
+});
+
+void test("new sync marks only provider authorization rejections", async () => {
+  for (const status of [401, 403]) {
+    const store = new MemoryNewActivitySyncStore(`authorization-${status}`);
+    const fetcher: typeof fetch = () => Promise.resolve(new Response(null, { status }));
+    const result = await syncNewStravaActivities("fixture-token", store.run, store, fetcher, 11);
+    assert.equal(result.outcome, "failed");
+    assert.equal(result.authorizationFailure, true);
+  }
+
+  const store = new MemoryNewActivitySyncStore("network-failure");
+  const result = await syncNewStravaActivities(
+    "fixture-token",
+    store.run,
+    store,
+    () => Promise.reject(new Error("temporary network failure")),
+    11,
+  );
+  assert.equal(result.authorizationFailure, undefined);
 });
 
 void test("repair refuses a provider athlete different from the expected history owner", async () => {

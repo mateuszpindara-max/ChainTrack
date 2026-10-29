@@ -5,7 +5,12 @@ import {
   STRAVA_TOKEN_ENCRYPTION_KEY,
 } from "astro:env/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { decryptToken, encryptToken, requireStravaConfiguration } from "./security.ts";
+import {
+  buildStravaConnectionCredentialUpdate,
+  decryptToken,
+  encryptToken,
+  requireStravaConfiguration,
+} from "./security.ts";
 import { refreshStravaAccessToken, type StravaTokenConnection } from "./token.ts";
 
 export function getStravaConfiguration() {
@@ -68,16 +73,15 @@ export async function saveStravaConnection(
 ) {
   const configuration = getStravaConfiguration();
   const { error } = await supabase.from("strava_connections").upsert(
-    {
-      user_id: userId,
-      access_token_ciphertext: await encryptToken(tokens.accessToken, configuration.encryptionKey),
-      refresh_token_ciphertext: await encryptToken(tokens.refreshToken, configuration.encryptionKey),
-      token_expires_at: new Date(tokens.expiresAt * 1000).toISOString(),
-      athlete_id: tokens.athleteId,
-      initial_import_athlete_id: tokens.athleteId,
+    buildStravaConnectionCredentialUpdate({
+      userId,
+      accessTokenCiphertext: await encryptToken(tokens.accessToken, configuration.encryptionKey),
+      refreshTokenCiphertext: await encryptToken(tokens.refreshToken, configuration.encryptionKey),
+      tokenExpiresAt: new Date(tokens.expiresAt * 1000).toISOString(),
+      athleteId: tokens.athleteId,
       scopes: tokens.scopes,
-      updated_at: new Date().toISOString(),
-    },
+      updatedAt: new Date().toISOString(),
+    }),
     { onConflict: "user_id" },
   );
   if (error) throw new Error("Could not save the Strava connection");

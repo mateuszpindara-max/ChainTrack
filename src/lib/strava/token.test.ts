@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { decodeTokenEncryptionKey, decryptToken, encryptToken } from "./security.ts";
+import { decodeTokenEncryptionKey, decryptToken, encryptToken, StravaAuthorizationError } from "./security.ts";
 import { refreshStravaAccessToken } from "./token.ts";
 
 void test("refresh persists the rotated refresh token before returning the new access token", async () => {
@@ -73,4 +73,30 @@ void test("refresh uses the persisted winner when another request rotates first"
   );
 
   assert.equal(accessToken, "winning-access-token");
+});
+
+void test("refresh marks only authorization rejection without exposing the provider response", async () => {
+  const encryptionKey = decodeTokenEncryptionKey("ef".repeat(32));
+  const configuration = {
+    clientId: "client-id",
+    clientSecret: "client-secret",
+    redirectUri: "http://localhost:4321/api/strava/callback",
+    encryptionKey,
+  };
+  const connection = {
+    access_token_ciphertext: await encryptToken("fixture-access", encryptionKey),
+    refresh_token_ciphertext: await encryptToken("fixture-refresh", encryptionKey),
+    token_expires_at: "2026-10-09T11:00:00.000Z",
+  };
+
+  await assert.rejects(
+    refreshStravaAccessToken(
+      connection,
+      configuration,
+      () => Promise.resolve(undefined),
+      () => Promise.resolve(new Response("sensitive provider body", { status: 401 })),
+      new Date("2026-10-09T12:00:00.000Z"),
+    ),
+    (error: unknown) => error instanceof StravaAuthorizationError && !error.message.includes("sensitive"),
+  );
 });

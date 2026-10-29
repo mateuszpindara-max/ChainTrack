@@ -12,7 +12,7 @@ import {
   type RepairActivityUpsert,
   type StravaBike,
 } from "@/lib/strava/import.ts";
-import { hasRequiredStravaScopes } from "@/lib/strava/security.ts";
+import { hasRequiredStravaScopes, isStravaAuthorizationError } from "@/lib/strava/security.ts";
 import { getStravaAccessToken } from "@/lib/strava/server";
 import type { StravaSyncDatabase } from "@/lib/strava/sync-database.ts";
 import { isStravaSyncMode } from "@/lib/strava/sync-contract.ts";
@@ -37,11 +37,17 @@ interface SyncRunRow {
   verification_step: number;
 }
 
-function failure(message: string, statusCode: number, mode?: "new" | "repair"): Response {
+function failure(
+  message: string,
+  statusCode: number,
+  mode?: "new" | "repair",
+  authorizationFailure = false,
+): Response {
   return Response.json(
     {
       outcome: "failed",
       ...(mode ? { mode } : {}),
+      ...(authorizationFailure ? { authorizationFailure: true } : {}),
       status: "failed",
       inserted: 0,
       updated: 0,
@@ -157,8 +163,13 @@ export const POST: APIRoute = async (context) => {
   let accessToken: string;
   try {
     accessToken = await getStravaAccessToken(supabase, user.id);
-  } catch {
-    return failure("The Strava connection is unavailable. Reconnect and try again.", 503, mode);
+  } catch (error) {
+    return failure(
+      "The Strava connection is unavailable. Reconnect and try again.",
+      503,
+      mode,
+      isStravaAuthorizationError(error),
+    );
   }
 
   const { data: activeRunRow, error: activeRunError } = await db

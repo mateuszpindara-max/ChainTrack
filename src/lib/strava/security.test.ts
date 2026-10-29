@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   canReconnectStravaAthlete,
+  buildStravaConnectionCredentialUpdate,
   consumeOAuthState,
   consumeOAuthStateFromDatabase,
   createOAuthState,
@@ -91,6 +92,51 @@ void test("Strava reconnect preserves the bound athlete and refuses account swit
   assert.equal(canReconnectStravaAthlete(null, 11), true);
   assert.equal(canReconnectStravaAthlete(11, 11), true);
   assert.equal(canReconnectStravaAthlete(11, 22), false);
+});
+
+void test("reauthorization updates credentials without resetting history or import progress", () => {
+  const existing = {
+    athlete_id: 11,
+    initial_import_athlete_id: 11,
+    initial_import_next_page: 8,
+    initial_import_completed_at: "2026-10-12T10:00:00.000Z",
+  };
+  const update = buildStravaConnectionCredentialUpdate({
+    userId: "user-a",
+    accessTokenCiphertext: "fixture-access-ciphertext",
+    refreshTokenCiphertext: "fixture-refresh-ciphertext",
+    tokenExpiresAt: "2026-11-01T10:00:00.000Z",
+    athleteId: 11,
+    scopes: ["activity:read_all", "profile:read_all"],
+    updatedAt: "2026-10-29T10:00:00.000Z",
+  });
+  const reauthorized = { ...existing, ...update };
+
+  assert.deepEqual(
+    {
+      athleteId: reauthorized.athlete_id,
+      importAthleteId: reauthorized.initial_import_athlete_id,
+      nextPage: reauthorized.initial_import_next_page,
+      completedAt: reauthorized.initial_import_completed_at,
+    },
+    {
+      athleteId: 11,
+      importAthleteId: 11,
+      nextPage: 8,
+      completedAt: "2026-10-12T10:00:00.000Z",
+    },
+  );
+  assert.deepEqual(Object.keys(update).sort(), [
+    "access_token_ciphertext",
+    "athlete_id",
+    "initial_import_athlete_id",
+    "refresh_token_ciphertext",
+    "scopes",
+    "token_expires_at",
+    "updated_at",
+    "user_id",
+  ]);
+  assert.equal(canReconnectStravaAthlete(existing.athlete_id, 22), false);
 });
 
 void test("OAuth state is one-use and bound to the initiating user and expiry", async () => {

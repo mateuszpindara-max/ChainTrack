@@ -7,6 +7,7 @@ import {
   hasRequiredStravaScopes,
 } from "@/lib/strava/security.ts";
 import { getStravaConfiguration, saveStravaConnection } from "@/lib/strava/server";
+import { stravaCallbackDenialStatus, stravaCallbackRedirect } from "@/lib/strava/sync-contract.ts";
 
 export const prerender = false;
 
@@ -26,20 +27,25 @@ export const GET: APIRoute = async (context) => {
   try {
     configuration = getStravaConfiguration();
   } catch {
-    return new Response("Strava connection is not configured", { status: 503 });
+    return context.redirect(stravaCallbackRedirect("failed"));
   }
 
   const state = context.url.searchParams.get("state") ?? "";
   const validState = await consumeOAuthState(state, user.id, new Date(), (stateHash, userId, now) =>
     consumeOAuthStateFromDatabase(supabase, stateHash, userId, now),
   );
-  if (!validState) return new Response("Invalid or expired Strava authorization state", { status: 400 });
+  if (!validState) return context.redirect(stravaCallbackRedirect("failed"));
 
   const providerError = context.url.searchParams.get("error");
   const code = context.url.searchParams.get("code");
   const scopeValue = context.url.searchParams.get("scope") ?? "";
-  if (providerError || !code || !hasRequiredStravaScopes(scopeValue)) {
-    return new Response("Strava authorization was denied or required scopes were not granted", { status: 403 });
+  const denialStatus = stravaCallbackDenialStatus(
+    Boolean(providerError),
+    Boolean(code),
+    hasRequiredStravaScopes(scopeValue),
+  );
+  if (denialStatus) {
+    return context.redirect(stravaCallbackRedirect(denialStatus));
   }
 
   let response: Response;
@@ -50,20 +56,20 @@ export const GET: APIRoute = async (context) => {
       body: new URLSearchParams({
         client_id: configuration.clientId,
         client_secret: configuration.clientSecret,
-        code,
+        code: code ?? "",
         grant_type: "authorization_code",
       }),
     });
   } catch {
-    return new Response("Strava authorization could not be completed", { status: 502 });
+    return context.redirect(stravaCallbackRedirect("failed"));
   }
-  if (!response.ok) return new Response("Strava authorization could not be completed", { status: 502 });
+  if (!response.ok) return context.redirect(stravaCallbackRedirect("failed"));
 
   let tokens: ExchangeResponse;
   try {
     tokens = await response.json();
   } catch {
-    return new Response("Strava returned an invalid authorization response", { status: 502 });
+    return context.redirect(stravaCallbackRedirect("failed"));
   }
   if (
     typeof tokens.access_token !== "string" ||
@@ -73,7 +79,7 @@ export const GET: APIRoute = async (context) => {
     typeof tokens.athlete?.id !== "number" ||
     !Number.isSafeInteger(tokens.athlete.id)
   ) {
-    return new Response("Strava returned an invalid authorization response", { status: 502 });
+    return context.redirect(stravaCallbackRedirect("failed"));
   }
 
   const { data: existingConnection, error: existingConnectionError } = await supabase
@@ -81,14 +87,11 @@ export const GET: APIRoute = async (context) => {
     .select("athlete_id")
     .eq("user_id", user.id)
     .maybeSingle();
-  if (existingConnectionError) return new Response("Could not verify the existing Strava connection", { status: 503 });
+  if (existingConnectionError) return context.redirect(stravaCallbackRedirect("failed"));
   const existingAthleteId: number | null =
     typeof existingConnection?.athlete_id === "number" ? existingConnection.athlete_id : null;
   if (!canReconnectStravaAthlete(existingAthleteId, tokens.athlete.id)) {
-    return new Response(
-      "This Strava connection is bound to a different athlete. Reset or reimport its history before switching accounts.",
-      { status: 409 },
-    );
+    return context.redirect(stravaCallbackRedirect("failed"));
   }
 
   try {
@@ -100,7 +103,7 @@ export const GET: APIRoute = async (context) => {
       scopes: scopeValue.split(/[\s,]+/).filter(Boolean),
     });
   } catch {
-    return new Response("Could not save the Strava connection", { status: 500 });
+    return context.redirect(stravaCallbackRedirect("failed"));
   }
-  return context.redirect("/dashboard?strava=connected");
+  return context.redirect(stravaCallbackRedirect("connected"));
 };

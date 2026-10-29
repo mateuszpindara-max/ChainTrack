@@ -1,6 +1,8 @@
 import type { ActivityView } from "./activity-view.ts";
 
 export type StravaSyncMode = "new" | "repair";
+export const STRAVA_CALLBACK_STATUSES = ["connected", "denied", "failed"] as const;
+export type StravaCallbackStatus = (typeof STRAVA_CALLBACK_STATUSES)[number];
 
 export interface ActiveStravaSyncRun {
   id: string;
@@ -19,6 +21,7 @@ export interface StravaSyncResponse {
   nextPage?: number;
   status?: "running" | "partial" | "completed";
   message?: string;
+  authorizationFailure?: true;
   activities?: ActivityView[];
   hasMoreActivities?: boolean;
 }
@@ -30,12 +33,29 @@ export interface InitialImportResponse {
   skipped: number;
   savedChanges?: boolean;
   message?: string;
+  authorizationFailure?: true;
   activities?: ActivityView[];
   hasMoreActivities?: boolean;
 }
 
 export function isStravaSyncMode(value: unknown): value is StravaSyncMode {
   return value === "new" || value === "repair";
+}
+
+export function isStravaCallbackStatus(value: unknown): value is StravaCallbackStatus {
+  return typeof value === "string" && STRAVA_CALLBACK_STATUSES.some((status) => status === value);
+}
+
+export function stravaCallbackDenialStatus(
+  providerDenied: boolean,
+  hasCode: boolean,
+  hasRequiredScopes: boolean,
+): "denied" | null {
+  return providerDenied || !hasCode || !hasRequiredScopes ? "denied" : null;
+}
+
+export function stravaCallbackRedirect(status: StravaCallbackStatus): string {
+  return `/dashboard?strava=${status}`;
 }
 
 export function buildStravaSyncRequest(mode: StravaSyncMode, activeRun: ActiveStravaSyncRun | null) {

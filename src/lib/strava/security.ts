@@ -31,6 +31,49 @@ export interface StravaConfiguration {
   encryptionKey: Uint8Array;
 }
 
+export interface StravaConnectionCredentialUpdate {
+  user_id: string;
+  access_token_ciphertext: string;
+  refresh_token_ciphertext: string;
+  token_expires_at: string;
+  athlete_id: number;
+  initial_import_athlete_id: number;
+  scopes: string[];
+  updated_at: string;
+}
+
+export class StravaAuthorizationError extends Error {
+  constructor() {
+    super("Strava authorization was rejected");
+    this.name = "StravaAuthorizationError";
+  }
+}
+
+export function isStravaAuthorizationError(error: unknown): error is StravaAuthorizationError {
+  return error instanceof StravaAuthorizationError;
+}
+
+export function buildStravaConnectionCredentialUpdate(input: {
+  userId: string;
+  accessTokenCiphertext: string;
+  refreshTokenCiphertext: string;
+  tokenExpiresAt: string;
+  athleteId: number;
+  scopes: string[];
+  updatedAt: string;
+}): StravaConnectionCredentialUpdate {
+  return {
+    user_id: input.userId,
+    access_token_ciphertext: input.accessTokenCiphertext,
+    refresh_token_ciphertext: input.refreshTokenCiphertext,
+    token_expires_at: input.tokenExpiresAt,
+    athlete_id: input.athleteId,
+    initial_import_athlete_id: input.athleteId,
+    scopes: input.scopes,
+    updated_at: input.updatedAt,
+  };
+}
+
 function encodeBase64Url(bytes: Uint8Array): string {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);

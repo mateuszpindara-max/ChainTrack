@@ -8,14 +8,25 @@ import {
   type ImportedActivity,
   type StravaBike,
 } from "@/lib/strava/import.ts";
-import { hasRequiredStravaScopes } from "@/lib/strava/security.ts";
+import { hasRequiredStravaScopes, isStravaAuthorizationError } from "@/lib/strava/security.ts";
 import { getStravaAccessToken } from "@/lib/strava/server";
 import type { StravaSyncDatabase } from "@/lib/strava/sync-database.ts";
 
 export const prerender = false;
 
-function failure(message: string, status: number, savedChanges = false): Response {
-  return Response.json({ outcome: "failed", inserted: 0, updated: 0, skipped: 0, savedChanges, message }, { status });
+function failure(message: string, status: number, savedChanges = false, authorizationFailure = false): Response {
+  return Response.json(
+    {
+      outcome: "failed",
+      inserted: 0,
+      updated: 0,
+      skipped: 0,
+      savedChanges,
+      ...(authorizationFailure ? { authorizationFailure: true } : {}),
+      message,
+    },
+    { status },
+  );
 }
 
 function isStringArray(value: unknown): value is string[] {
@@ -74,8 +85,13 @@ export const POST: APIRoute = async (context) => {
   let accessToken: string;
   try {
     accessToken = await getStravaAccessToken(supabase, user.id);
-  } catch {
-    return failure("The Strava connection is unavailable. Reconnect and try again.", 503);
+  } catch (error) {
+    return failure(
+      "The Strava connection is unavailable. Reconnect and try again.",
+      503,
+      false,
+      isStravaAuthorizationError(error),
+    );
   }
 
   const bikeIds = new Map<string, string>();
