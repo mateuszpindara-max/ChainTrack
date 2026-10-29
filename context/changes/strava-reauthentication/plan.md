@@ -174,14 +174,14 @@ No database migration is expected. Existing OAuth state and connection tables ar
 
 #### Automated
 
-- [x] 2.1 `npm test` passes, including focused checks that the recovery action is enabled for only the two agreed triggers and is absent for unrelated errors.
-- [x] 2.2 `npm run check` and `npm run lint` pass.
-- [x] 2.3 `git diff --check` reports no whitespace errors, and the change introduces no database migration or secret-bearing value.
+- [x] 2.1 `npm test` passes, including focused checks that the recovery action is enabled for only the two agreed triggers and is absent for unrelated errors. — 01fa553
+- [x] 2.2 `npm run check` and `npm run lint` pass. — 01fa553
+- [x] 2.3 `git diff --check` reports no whitespace errors, and the change introduces no database migration or secret-bearing value. — 01fa553
 
 #### Manual
 
-- [x] 2.4 From a connected dashboard, simulate an authorization failure and confirm the reauthorization action and safe recovery message appear.
-- [x] 2.5 Confirm the exact selected invalid-response message also offers reauthorization, while an unrelated network or provider failure does not.
-- [x] 2.6 Complete OAuth for the same athlete and confirm the dashboard reports success and existing activities, chain assignments, import progress, and sync state remain present.
-- [x] 2.7 Cancel or deny OAuth and confirm the user returns to the dashboard with a safe status and can retry.
-- [x] 2.8 Attempt authorization for a different athlete and confirm it is rejected without changing the existing connection or history.
+- [x] 2.4 From a connected dashboard, simulate an authorization failure and confirm the reauthorization action and safe recovery message appear. — 01fa553
+- [x] 2.5 Confirm the exact selected invalid-response message also offers reauthorization, while an unrelated network or provider failure does not. — 01fa553
+- [x] 2.6 Complete OAuth for the same athlete and confirm the dashboard reports success and existing activities, chain assignments, import progress, and sync state remain present. — 01fa553
+- [x] 2.7 Cancel or deny OAuth and confirm the user returns to the dashboard with a safe status and can retry. — 01fa553
+- [x] 2.8 Attempt authorization for a different athlete and confirm it is rejected without changing the existing connection or history. — 01fa553
