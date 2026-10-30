@@ -1,7 +1,7 @@
 ---
 change_id: dashboard-visual-system
 title: Align dashboard controls with the ChainTrack design system
-status: impl_reviewed
+status: implemented
 created: 2026-10-30
 updated: 2026-10-30
 archived_at: null

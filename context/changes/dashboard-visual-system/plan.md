@@ -52,4 +52,4 @@ Render the dashboard's default, hover, focus, disabled, error, empty, and loadin
 
 #### Manual
 
-- [x] 2.1 Capture all seven named states together in a dashboard kitchen-sink screenshot.
+- [x] 2.1 Capture all seven named states together in a dashboard kitchen-sink screenshot. — d2ca32d
