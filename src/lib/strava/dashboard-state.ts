@@ -2,7 +2,10 @@ import type { ActivityView } from "./activity-view.ts";
 
 export type DashboardChainFilter = string | null;
 export type DashboardSelection =
-  { kind: "summary" } | { kind: "activities"; bikeId: string | null; chainId: DashboardChainFilter };
+  | { kind: "summary" }
+  | { kind: "activities"; bikeId: string | null; chainId: DashboardChainFilter }
+  | { kind: "chain"; chainId: string }
+  | { kind: "manage-chains" };
 
 export type DashboardViewState = "summary" | "loading" | "error" | "empty" | "activities";
 
@@ -34,6 +37,8 @@ export type DashboardStateAction =
   | { type: "select-summary" }
   | { type: "select-all-bikes" }
   | { type: "select-bike"; bikeId: string }
+  | { type: "select-chain"; chainId: string }
+  | { type: "select-manage-chains" }
   | { type: "select-chain-filter"; filter: DashboardChainFilter }
   | { type: "refresh-after-save"; result: SavedChangesResult }
   | { type: "activities-loading"; key: DashboardRequestKey }
@@ -44,9 +49,9 @@ export type DashboardStateAction =
   | { type: "load-more-error"; key: DashboardRequestKey; message: string };
 
 function selectionKey(selection: DashboardSelection): string {
-  return selection.kind === "summary"
-    ? "summary"
-    : `activities:${selection.bikeId ?? "all"}:chain:${selection.chainId ?? "any"}`;
+  if (selection.kind === "summary" || selection.kind === "manage-chains") return selection.kind;
+  if (selection.kind === "chain") return `chain:${selection.chainId}`;
+  return `activities:${selection.bikeId ?? "all"}:chain:${selection.chainId ?? "any"}`;
 }
 
 function resetActivityPage(state: DashboardState, activityStatus: DashboardState["activityStatus"]): DashboardState {
@@ -116,6 +121,12 @@ export function dashboardStateReducer(state: DashboardState, action: DashboardSt
         { ...state, selection: { kind: "activities", bikeId: action.bikeId, chainId: null } },
         "loading",
       );
+    case "select-chain":
+      if (state.selection.kind === "chain" && state.selection.chainId === action.chainId) return state;
+      return resetActivityPage({ ...state, selection: { kind: "chain", chainId: action.chainId } }, "idle");
+    case "select-manage-chains":
+      if (state.selection.kind === "manage-chains") return state;
+      return resetActivityPage({ ...state, selection: { kind: "manage-chains" } }, "idle");
     case "select-chain-filter":
       if (state.selection.kind !== "activities" || state.selection.bikeId === null) return state;
       if (state.selection.chainId === action.filter) return state;
@@ -131,7 +142,7 @@ export function dashboardStateReducer(state: DashboardState, action: DashboardSt
         action.result.savedChanges === true ||
         action.result.inserted + action.result.updated + (action.result.removed ?? 0) > 0;
       if (!savedChanges && action.result.outcome !== "complete") return state;
-      const nextState = resetActivityPage(state, state.selection.kind === "summary" ? "idle" : "loading");
+      const nextState = resetActivityPage(state, state.selection.kind === "activities" ? "loading" : "idle");
       return { ...nextState, refreshGeneration: state.refreshGeneration + 1 };
     }
     case "activities-loading":

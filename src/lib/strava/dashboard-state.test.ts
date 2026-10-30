@@ -54,6 +54,17 @@ void test("chain filters require a bike, reset on bike changes, and distinguish 
   assert.notEqual(getDashboardRequestKey(state).selection, anyChainKey);
 });
 
+void test("chain and management selections have distinct keys and are cleared by bike or summary selection", () => {
+  let state = dashboardStateReducer(createDashboardState(), { type: "select-chain", chainId: "chain-1" });
+  assert.equal(getDashboardRequestKey(state).selection, "chain:chain-1");
+  state = dashboardStateReducer(state, { type: "select-bike", bikeId: "bike-1" });
+  assert.deepEqual(state.selection, { kind: "activities", bikeId: "bike-1", chainId: null });
+  state = dashboardStateReducer(state, { type: "select-manage-chains" });
+  assert.equal(getDashboardRequestKey(state).selection, "manage-chains");
+  state = dashboardStateReducer(state, { type: "select-summary" });
+  assert.deepEqual(state.selection, { kind: "summary" });
+});
+
 void test("a selected bike with a loaded empty page has an empty state", () => {
   let state = dashboardStateReducer(createDashboardState(), { type: "select-bike", bikeId: "bike-empty" });
   state = dashboardStateReducer(state, {
@@ -98,6 +109,30 @@ void test("failed import responses refresh when the server reports saved changes
   });
 
   assert.equal(state.refreshGeneration, 1);
+});
+
+void test("chain mutations and saved partial failures invalidate old lifecycle request keys", () => {
+  let state = dashboardStateReducer(createDashboardState(), { type: "select-chain", chainId: "chain-1" });
+  const originalKey = getDashboardRequestKey(state);
+  for (const result of [
+    { outcome: "complete" as const, inserted: 0, updated: 0 },
+    { outcome: "partial" as const, inserted: 1, updated: 0 },
+    { outcome: "failed" as const, inserted: 0, updated: 0, savedChanges: true },
+  ]) {
+    const previousKey = getDashboardRequestKey(state);
+    state = dashboardStateReducer(state, { type: "refresh-after-save", result });
+    assert.notDeepEqual(getDashboardRequestKey(state), previousKey);
+    assert.deepEqual(state.selection, { kind: "chain", chainId: "chain-1" });
+  }
+  assert.equal(state.refreshGeneration, 3);
+  assert.notDeepEqual(getDashboardRequestKey(state), originalKey);
+  const stale = dashboardStateReducer(state, {
+    type: "activities-loaded",
+    key: originalKey,
+    activities: [firstActivity],
+    hasMore: false,
+  });
+  assert.equal(stale, state);
 });
 
 void test("unchanged failed operations do not refresh and stale activity responses are discarded", () => {

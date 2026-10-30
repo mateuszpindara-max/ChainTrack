@@ -1,5 +1,11 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import { isLifecycleChainView, type LifecycleChainView } from "@/lib/chains/chain.ts";
+import {
+  isChainMetricsPage,
+  parseBikeStatuses,
+  type BikeStatus,
+  type ChainMetricsPage,
+} from "@/lib/chains/dashboard-lifecycle.ts";
 import type { ActivityView, BikeRow } from "@/lib/strava/activity-view.ts";
 import { getLocalYearInterval, type DashboardSummary } from "@/lib/strava/dashboard-summary.ts";
 import {
@@ -160,6 +166,23 @@ export function useDashboardData(options: DashboardDataOptions) {
   const [summaryRetry, setSummaryRetry] = useState(0);
   const [bikesRetry, setBikesRetry] = useState(0);
   const [chainsRetry, setChainsRetry] = useState(0);
+  const [lifecycleRetry, setLifecycleRetry] = useState(0);
+  const [bikeStatuses, setBikeStatuses] = useState<{
+    items: Partial<Record<string, BikeStatus>>;
+    error: string | null;
+  }>({
+    items: {},
+    error: null,
+  });
+  const [chainMetrics, setChainMetrics] = useState<{
+    key: string;
+    value: ChainMetricsPage | null;
+    loading: boolean;
+    error: string | null;
+    loadingMore: boolean;
+    loadMoreError: string | null;
+  }>({ key: "", value: null, loading: false, error: null, loadingMore: false, loadMoreError: null });
+  const cycleRequestRef = useRef<AbortController | null>(null);
   const [waxingMarkSave, setWaxingMarkSave] = useState<WaxingMarkSaveState>({
     activityId: null,
     phase: "idle",
@@ -179,6 +202,89 @@ export function useDashboardData(options: DashboardDataOptions) {
   const refreshGeneration = requestKey.refreshGeneration;
   const activitySelection = dashboard.selection.kind === "activities" ? dashboard.selection : null;
   const hasActivitySelection = activitySelection !== null;
+  const selectedChainId = dashboard.selection.kind === "chain" ? dashboard.selection.chainId : null;
+  const metricsKey = `${selectionKey}:${refreshGeneration}`;
+
+  useEffect(() => {
+    const key = { selection: selectionKey, refreshGeneration };
+    const controller = new AbortController();
+    void (async () => {
+      try {
+        const payload = await readPayload(
+          await fetch("/api/chains/bike-status", { signal: controller.signal }),
+          "Bike status could not be loaded.",
+        );
+        const items = parseBikeStatuses(payload);
+        if (!items) throw new Error("Bike status returned an invalid response.");
+        if (!controller.signal.aborted && isCurrentDashboardRequest(stateRef.current, key))
+          setBikeStatuses({ items, error: null });
+      } catch (error) {
+        if (!controller.signal.aborted && isCurrentDashboardRequest(stateRef.current, key)) {
+          setBikeStatuses({
+            items: {},
+            error: error instanceof Error ? error.message : "Bike status could not be loaded.",
+          });
+        }
+      }
+    })();
+    return () => {
+      controller.abort();
+    };
+  }, [selectionKey, refreshGeneration, lifecycleRetry]);
+
+  useEffect(() => {
+    if (selectedChainId === null) return;
+    const key = { selection: selectionKey, refreshGeneration };
+    const controller = new AbortController();
+    cycleRequestRef.current?.abort();
+    cycleRequestRef.current = null;
+    setChainMetrics({
+      key: metricsKey,
+      value: null,
+      loading: true,
+      error: null,
+      loadingMore: false,
+      loadMoreError: null,
+    });
+    void (async () => {
+      try {
+        const payload = await readPayload(
+          await fetch(`/api/chains/${encodeURIComponent(selectedChainId)}/metrics?offset=0`, {
+            signal: controller.signal,
+          }),
+          "Chain metrics could not be loaded.",
+        );
+        if (!isChainMetricsPage(payload) || payload.chain.id !== selectedChainId)
+          throw new Error("Chain metrics returned an invalid response.");
+        if (!controller.signal.aborted && isCurrentDashboardRequest(stateRef.current, key)) {
+          setChainMetrics({
+            key: metricsKey,
+            value: payload,
+            loading: false,
+            error: null,
+            loadingMore: false,
+            loadMoreError: null,
+          });
+        }
+      } catch (error) {
+        if (!controller.signal.aborted && isCurrentDashboardRequest(stateRef.current, key)) {
+          setChainMetrics({
+            key: metricsKey,
+            value: null,
+            loading: false,
+            error: error instanceof Error ? error.message : "Chain metrics could not be loaded.",
+            loadingMore: false,
+            loadMoreError: null,
+          });
+        }
+      }
+    })();
+    return () => {
+      controller.abort();
+      cycleRequestRef.current?.abort();
+      cycleRequestRef.current = null;
+    };
+  }, [selectedChainId, selectionKey, refreshGeneration, lifecycleRetry, metricsKey]);
 
   useEffect(() => {
     const interval = getLocalYearInterval();
@@ -218,6 +324,11 @@ export function useDashboardData(options: DashboardDataOptions) {
   useEffect(() => {
     const key = { selection: selectionKey, refreshGeneration };
     if (!activitySelection) return;
+    if (
+      waxingRefreshContextRef.current &&
+      isCurrentDashboardRequest(stateRef.current, waxingRefreshContextRef.current.key)
+    )
+      return;
     const controller = new AbortController();
     sendAction({ type: "activities-loading", key });
     void (async () => {
@@ -430,6 +541,52 @@ export function useDashboardData(options: DashboardDataOptions) {
     }
   }
 
+  async function loadMoreCycles() {
+    const key = getDashboardRequestKey(stateRef.current);
+    const currentSelection = stateRef.current.selection;
+    if (
+      currentSelection.kind !== "chain" ||
+      chainMetrics.key !== `${key.selection}:${key.refreshGeneration}` ||
+      !chainMetrics.value?.hasMore ||
+      cycleRequestRef.current
+    )
+      return;
+    const controller = new AbortController();
+    cycleRequestRef.current = controller;
+    const offset = chainMetrics.value.cycles.length;
+    setChainMetrics((current) => ({ ...current, loadingMore: true, loadMoreError: null }));
+    try {
+      const payload = await readPayload(
+        await fetch(`/api/chains/${encodeURIComponent(currentSelection.chainId)}/metrics?offset=${offset}`, {
+          signal: controller.signal,
+        }),
+        "More cycles could not be loaded.",
+      );
+      if (!isChainMetricsPage(payload) || payload.chain.id !== currentSelection.chainId)
+        throw new Error("Chain metrics returned an invalid response.");
+      if (!controller.signal.aborted && isCurrentDashboardRequest(stateRef.current, key)) {
+        setChainMetrics((current) =>
+          current.value && current.key === `${key.selection}:${key.refreshGeneration}`
+            ? {
+                ...current,
+                value: { ...payload, cycles: [...current.value.cycles, ...payload.cycles] },
+                loadingMore: false,
+              }
+            : current,
+        );
+      }
+    } catch (error) {
+      if (!controller.signal.aborted && isCurrentDashboardRequest(stateRef.current, key))
+        setChainMetrics((current) => ({
+          ...current,
+          loadingMore: false,
+          loadMoreError: error instanceof Error ? error.message : "More cycles could not be loaded.",
+        }));
+    } finally {
+      if (cycleRequestRef.current === controller) cycleRequestRef.current = null;
+    }
+  }
+
   async function refreshWaxingActivities(context: WaxingRefreshContext) {
     setWaxingMarkSave({
       activityId: context.activityId,
@@ -510,6 +667,15 @@ export function useDashboardData(options: DashboardDataOptions) {
       });
       return;
     }
+    const stillSelected = isCurrentDashboardRequest(stateRef.current, context.key);
+    refreshAfterSavedChanges({ outcome: "complete", inserted: 0, updated: 0 });
+    if (!stillSelected) {
+      waxingOperationRef.current = false;
+      setWaxingMarkSave({ activityId: null, phase: "idle", error: null, canRetryRefresh: false });
+      return;
+    }
+    context.key = getDashboardRequestKey(stateRef.current);
+    waxingRefreshContextRef.current = context;
     await refreshWaxingActivities(context);
   }
 
@@ -530,6 +696,11 @@ export function useDashboardData(options: DashboardDataOptions) {
     summaryYear,
     bikes,
     chains,
+    bikeStatuses,
+    chainMetrics:
+      chainMetrics.key === metricsKey
+        ? chainMetrics
+        : { ...chainMetrics, value: null, loading: selectedChainId !== null, error: null },
     selectSummary: () => {
       sendAction({ type: "select-summary" });
     },
@@ -538,6 +709,12 @@ export function useDashboardData(options: DashboardDataOptions) {
     },
     selectBike: (bikeId: string) => {
       sendAction({ type: "select-bike", bikeId });
+    },
+    selectChain: (chainId: string) => {
+      sendAction({ type: "select-chain", chainId });
+    },
+    selectManageChains: () => {
+      sendAction({ type: "select-manage-chains" });
     },
     selectChainFilter: (filter: string | null) => {
       sendAction({ type: "select-chain-filter", filter });
@@ -557,6 +734,10 @@ export function useDashboardData(options: DashboardDataOptions) {
     loadMoreActivities,
     loadMoreBikes,
     loadMoreChains,
+    loadMoreCycles,
+    retryLifecycle: () => {
+      setLifecycleRetry((value) => value + 1);
+    },
     saveWaxingMark,
     waxingMarkSave: {
       ...waxingMarkSave,

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Menu, Sparkles, X } from "lucide-react";
 import DashboardSidebar from "@/components/DashboardSidebar";
+import ChainDetails from "@/components/ChainDetails";
+import ChainManager from "@/components/ChainManager";
 import YearSummary from "@/components/YearSummary";
 import { useDashboardData } from "@/components/hooks/useDashboardData";
 import type { LifecycleChainView } from "@/lib/chains/chain.ts";
@@ -146,6 +148,10 @@ export default function ActivityDashboard({
     drawerTriggerRef.current?.focus();
   }
 
+  function refreshAfterChainMutation() {
+    data.refreshAfterSavedChanges({ outcome: "complete", inserted: 0, updated: 0 });
+  }
+
   async function importActivities() {
     setLoading(true);
     setLoadingAction("initial");
@@ -155,7 +161,7 @@ export default function ActivityDashboard({
       const payload: unknown = await response.json();
       if (!isImportResponse(payload)) throw new Error("The activity import returned an invalid response.");
       if (!response.ok) {
-        if (payload.savedChanges) data.refreshAfterSavedChanges(payload);
+        data.refreshAfterSavedChanges(payload);
         setResult(payload);
         return;
       }
@@ -378,9 +384,13 @@ export default function ActivityDashboard({
             selection={data.dashboard.selection}
             bikes={data.bikes}
             chains={data.chains}
+            bikeStatuses={data.bikeStatuses}
             onSelectSummary={data.selectSummary}
             onSelectAllBikes={data.selectAllBikes}
             onSelectBike={data.selectBike}
+            onSelectChain={data.selectChain}
+            onSelectManageChains={data.selectManageChains}
+            onRetryLifecycle={data.retryLifecycle}
             onRetryBikes={data.retryBikes}
             onRetryChains={data.retryChains}
             onLoadMoreBikes={data.loadMoreBikes}
@@ -396,6 +406,22 @@ export default function ActivityDashboard({
               loading={data.summary.loading}
               error={data.summary.error}
               onRetry={data.retrySummary}
+            />
+          ) : selection.kind === "chain" ? (
+            <ChainDetails
+              key={selection.chainId}
+              metrics={data.chainMetrics}
+              onRetry={data.retryLifecycle}
+              onLoadMore={data.loadMoreCycles}
+              onMutation={refreshAfterChainMutation}
+            />
+          ) : selection.kind === "manage-chains" ? (
+            <ChainManager
+              embedded
+              initialChains={data.chains.items}
+              initialHasMore={data.chains.hasMore}
+              initialLoadError={Boolean(data.chains.error)}
+              onMutation={refreshAfterChainMutation}
             />
           ) : (
             <section aria-labelledby="activity-heading">
@@ -689,9 +715,13 @@ export default function ActivityDashboard({
           selection={data.dashboard.selection}
           bikes={data.bikes}
           chains={data.chains}
+          bikeStatuses={data.bikeStatuses}
           onSelectSummary={data.selectSummary}
           onSelectAllBikes={data.selectAllBikes}
           onSelectBike={data.selectBike}
+          onSelectChain={data.selectChain}
+          onSelectManageChains={data.selectManageChains}
+          onRetryLifecycle={data.retryLifecycle}
           onRetryBikes={data.retryBikes}
           onRetryChains={data.retryChains}
           onLoadMoreBikes={data.loadMoreBikes}

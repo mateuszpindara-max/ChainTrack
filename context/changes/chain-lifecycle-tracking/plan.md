@@ -459,29 +459,29 @@ No code changes. Fix any defects found back in the phase that owns them.
 
 #### Automated
 
-- [x] 2.1 Unit tests pass
-- [x] 2.2 Type checking passes
-- [x] 2.3 Linting passes
+- [x] 2.1 Unit tests pass — 243efe1
+- [x] 2.2 Type checking passes — 243efe1
+- [x] 2.3 Linting passes — 243efe1
 
 #### Manual
 
-- [x] 2.4 Signed-in API calls return expected status codes and totals
-- [x] 2.5 Suggested default is sourced and recorded, or the constant is null and the brief says so
+- [x] 2.4 Signed-in API calls return expected status codes and totals — 243efe1
+- [x] 2.5 Suggested default is sourced and recorded, or the constant is null and the brief says so — 243efe1
 
 ### Phase 3: Main-Pane Navigation and Alerts
 
 #### Automated
 
-- [ ] 3.1 Dashboard state tests pass with new selection cases
-- [ ] 3.2 Linting passes
-- [ ] 3.3 Type checking passes
+- [x] 3.1 Dashboard state tests pass with new selection cases
+- [x] 3.2 Linting passes
+- [x] 3.3 Type checking passes
 
 #### Manual
 
-- [ ] 3.4 Chain selection opens details in the main pane
-- [ ] 3.5 Cog opens the manage view and CRUD works there
-- [ ] 3.6 Bike row alert colors and hover text work; chain items show no color
-- [ ] 3.7 Mobile drawer behaves the same
+- [x] 3.4 Chain selection opens details in the main pane
+- [x] 3.5 Cog opens the manage view and CRUD works there
+- [x] 3.6 Bike row alert colors and hover text work; chain items show no color
+- [x] 3.7 Mobile drawer behaves the same
 
 ### Phase 4: Route Consolidation
 

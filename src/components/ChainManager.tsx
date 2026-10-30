@@ -12,6 +12,8 @@ interface Props {
   initialChains: ChainView[];
   initialHasMore: boolean;
   initialLoadError: boolean;
+  embedded?: boolean;
+  onMutation?: () => void;
 }
 
 interface ChainPage {
@@ -62,7 +64,14 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
-export default function ChainManager({ initialChains, initialHasMore, initialLoadError }: Props) {
+export default function ChainManager({
+  initialChains,
+  initialHasMore,
+  initialLoadError,
+  embedded = false,
+  onMutation,
+}: Props) {
+  const Container = embedded ? "div" : "main";
   const [chains, setChains] = useState(initialChains);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [name, setName] = useState("");
@@ -105,6 +114,7 @@ export default function ChainManager({ initialChains, initialHasMore, initialLoa
         setError(apiError.message ?? "Could not create the chain.");
         return;
       }
+      onMutation?.();
       if (typeof payload !== "object" || payload === null || !isChainView((payload as Record<string, unknown>).chain)) {
         throw new Error("The chain service returned an invalid response.");
       }
@@ -156,6 +166,7 @@ export default function ChainManager({ initialChains, initialHasMore, initialLoa
         setError(apiError.message ?? "Could not update the chain.");
         return;
       }
+      onMutation?.();
       if (typeof payload !== "object" || payload === null || !isChainView((payload as Record<string, unknown>).chain)) {
         throw new Error("The chain service returned an invalid response.");
       }
@@ -181,6 +192,7 @@ export default function ChainManager({ initialChains, initialHasMore, initialLoa
         const apiError = readApiError(await readJson(response), "Could not delete the chain.");
         throw new Error(apiError.message ?? "Could not delete the chain.");
       }
+      onMutation?.();
 
       const deleted = chains.find((chain) => chain.id === id);
       setChains((current) => current.filter((chain) => chain.id !== id));
@@ -216,20 +228,26 @@ export default function ChainManager({ initialChains, initialHasMore, initialLoa
   }
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-6xl px-5 py-8 text-white sm:px-8 sm:py-12">
-      <header className="flex flex-wrap items-start justify-between gap-6 border-b border-white/15 pb-8">
-        <div>
-          <p className="text-sm font-semibold text-orange-300 uppercase">ChainTrack</p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Your chains</h1>
-          <p className="mt-2 text-sm text-blue-100/70">Track starting mileage for each chain.</p>
-        </div>
-        <a
-          href="/dashboard"
-          className="inline-flex min-h-10 items-center rounded-md border border-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
-        >
-          Back to dashboard
-        </a>
-      </header>
+    <Container
+      className={
+        embedded ? "w-full text-white" : "mx-auto min-h-screen w-full max-w-6xl px-5 py-8 text-white sm:px-8 sm:py-12"
+      }
+    >
+      {!embedded && (
+        <header className="flex flex-wrap items-start justify-between gap-6 border-b border-white/15 pb-8">
+          <div>
+            <p className="text-sm font-semibold text-orange-300 uppercase">ChainTrack</p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Your chains</h1>
+            <p className="mt-2 text-sm text-blue-100/70">Track starting mileage for each chain.</p>
+          </div>
+          <a
+            href="/dashboard"
+            className="inline-flex min-h-10 items-center rounded-md border border-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
+          >
+            Back to dashboard
+          </a>
+        </header>
+      )}
 
       <section className="border-b border-white/15 py-7" aria-labelledby="create-chain-heading">
         <h2 id="create-chain-heading" className="text-xl font-semibold">
@@ -498,6 +516,6 @@ export default function ChainManager({ initialChains, initialHasMore, initialLoa
           </button>
         )}
       </section>
-    </main>
+    </Container>
   );
 }

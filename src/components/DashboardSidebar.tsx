@@ -1,6 +1,9 @@
+import { Settings } from "lucide-react";
 import type { LifecycleChainView } from "@/lib/chains/chain.ts";
+import type { BikeStatus } from "@/lib/chains/dashboard-lifecycle.ts";
 import type { BikeRow } from "@/lib/strava/activity-view.ts";
 import type { DashboardSelection } from "@/lib/strava/dashboard-state.ts";
+import { cn } from "@/lib/utils";
 
 interface ListState<T> {
   items: T[];
@@ -15,9 +18,13 @@ interface Props {
   selection: DashboardSelection;
   bikes: ListState<BikeRow>;
   chains: ListState<LifecycleChainView>;
+  bikeStatuses: { items: Partial<Record<string, BikeStatus>>; error: string | null };
   onSelectSummary: () => void;
   onSelectAllBikes: () => void;
   onSelectBike: (bikeId: string) => void;
+  onSelectChain: (chainId: string) => void;
+  onSelectManageChains: () => void;
+  onRetryLifecycle: () => void;
   onRetryBikes: () => void;
   onRetryChains: () => void;
   onLoadMoreBikes: () => void;
@@ -31,9 +38,13 @@ export default function DashboardSidebar({
   selection,
   bikes,
   chains,
+  bikeStatuses,
   onSelectSummary,
   onSelectAllBikes,
   onSelectBike,
+  onSelectChain,
+  onSelectManageChains,
+  onRetryLifecycle,
   onRetryBikes,
   onRetryChains,
   onLoadMoreBikes,
@@ -80,22 +91,47 @@ export default function DashboardSidebar({
           >
             All bikes
           </button>
-          {bikes.items.map((bike) => (
-            <button
-              key={bike.id}
-              type="button"
-              onClick={() => {
-                onSelectBike(bike.id);
-                onNavigate?.();
-              }}
-              aria-current={selectedBike(bike.id) ? "page" : undefined}
-              className={`min-h-10 truncate rounded px-3 py-2 text-left text-sm transition-colors hover:bg-white/10 ${focusStyle} ${selectedBike(bike.id) ? "bg-white/10 font-medium text-white" : "text-blue-100/75"}`}
-              title={bike.name}
-            >
-              {bike.name}
-            </button>
-          ))}
+          {bikes.items.map((bike) => {
+            const bikeStatus = bikeStatuses.items[bike.id];
+            return (
+              <button
+                key={bike.id}
+                type="button"
+                onClick={() => {
+                  onSelectBike(bike.id);
+                  onNavigate?.();
+                }}
+                aria-current={selectedBike(bike.id) ? "page" : undefined}
+                className={cn(
+                  "min-h-10 truncate rounded px-3 py-2 text-left text-sm transition-colors hover:bg-white/10",
+                  focusStyle,
+                  selectedBike(bike.id) ? "bg-white/10 font-medium text-white" : "text-blue-100/75",
+                  bikeStatus?.level === "warning" && "bg-orange-500/20 text-orange-200",
+                  bikeStatus?.level === "critical" && "bg-red-500/20 text-red-200",
+                )}
+                title={
+                  bikeStatus
+                    ? `${bikeStatus.chainName}: ${bikeStatus.percent === null ? "No threshold" : `${bikeStatus.percent}% of threshold`}`
+                    : bike.name
+                }
+              >
+                {bike.name}
+              </button>
+            );
+          })}
         </div>
+        {bikeStatuses.error && (
+          <div className="px-3 py-2 text-sm text-amber-200" role="alert">
+            <p>{bikeStatuses.error}</p>
+            <button
+              type="button"
+              onClick={onRetryLifecycle}
+              className={cn("mt-2 underline underline-offset-4", focusStyle)}
+            >
+              Retry bike status
+            </button>
+          </div>
+        )}
         {bikes.loading && (
           <p className="px-3 py-2 text-sm text-blue-100/60" role="status">
             Refreshing bikes...
@@ -130,22 +166,50 @@ export default function DashboardSidebar({
       </section>
 
       <section aria-labelledby="chains-heading">
-        <h2 id="chains-heading" className="mb-3 px-3 text-xs font-semibold tracking-wide text-blue-100/50 uppercase">
-          <a href="/chains" onClick={onNavigate} className={`rounded hover:text-white ${focusStyle}`}>
+        <div className="mb-3 flex items-center justify-between px-3">
+          <h2 id="chains-heading" className="text-xs font-semibold tracking-wide text-blue-100/50 uppercase">
             Chains
-          </a>
-        </h2>
+          </h2>
+          <button
+            type="button"
+            onClick={() => {
+              onSelectManageChains();
+              onNavigate?.();
+            }}
+            aria-label="Manage chains"
+            title="Manage chains"
+            aria-current={selection.kind === "manage-chains" ? "page" : undefined}
+            className={cn(
+              "grid size-9 place-items-center rounded text-blue-100/75 hover:bg-white/10",
+              focusStyle,
+              selection.kind === "manage-chains" && "bg-white/10 text-white",
+            )}
+          >
+            <Settings aria-hidden="true" size={17} />
+          </button>
+        </div>
         <div className="grid gap-1">
           {chains.items.map((chain) => (
-            <a
+            <button
               key={chain.id}
-              href="/chains"
-              onClick={onNavigate}
-              className={`min-h-10 truncate rounded px-3 py-2 text-sm text-blue-100/75 transition-colors hover:bg-white/10 hover:text-white ${focusStyle}`}
+              type="button"
+              onClick={() => {
+                onSelectChain(chain.id);
+                onNavigate?.();
+              }}
+              aria-current={selection.kind === "chain" && selection.chainId === chain.id ? "page" : undefined}
+              className={cn(
+                "min-h-10 rounded px-3 py-2 text-left text-sm text-blue-100/75 transition-colors hover:bg-white/10 hover:text-white",
+                focusStyle,
+                selection.kind === "chain" && selection.chainId === chain.id && "bg-white/10 text-white",
+              )}
               title={chain.name}
             >
-              {chain.name}
-            </a>
+              <span className="block truncate">{chain.name}</span>
+              <span className="block text-xs text-blue-100/60">
+                {chain.status === "active" ? "Active" : chain.status === "stopped" ? "Stopped" : "Not started"}
+              </span>
+            </button>
           ))}
         </div>
         {chains.loading && (
@@ -179,13 +243,6 @@ export default function DashboardSidebar({
         {!chains.hasMore && !chains.loading && !chains.error && chains.items.length === 0 && (
           <p className="px-3 py-2 text-sm text-blue-100/50">No chains yet.</p>
         )}
-        <a
-          href="/chains"
-          onClick={onNavigate}
-          className={`mt-3 inline-flex min-h-10 items-center rounded px-3 py-2 text-sm font-medium text-orange-200 hover:bg-white/10 ${focusStyle}`}
-        >
-          Manage chains
-        </a>
       </section>
     </nav>
   );
