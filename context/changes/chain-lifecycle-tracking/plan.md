@@ -499,12 +499,12 @@ No code changes. Fix any defects found back in the phase that owns them.
 
 #### Automated
 
-- [ ] 5.1 Full gate passes in order
-- [ ] 5.2 pgTAP suite passes
+- [x] 5.1 Full gate passes in order
+- [x] 5.2 pgTAP suite passes
 
 #### Manual
 
-- [ ] 5.3 Stop scenario behaves as specified
-- [ ] 5.4 Reattach scenario behaves as specified
-- [ ] 5.5 Average appears only after two completed cycles and does not change threshold
-- [ ] 5.6 Threshold change updates the bike alert without reload
+- [x] 5.3 Stop scenario behaves as specified
+- [x] 5.4 Reattach scenario behaves as specified
+- [x] 5.5 Average appears only after two completed cycles and does not change threshold
+- [x] 5.6 Threshold change updates the bike alert without reload
