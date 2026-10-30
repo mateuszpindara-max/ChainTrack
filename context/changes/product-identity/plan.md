@@ -187,15 +187,15 @@ No database schema or production migration is planned. Changing `supabase/config
 
 #### Automated
 
-- [x] 1.1 `npm run lint` passes after runtime and smoke-test changes.
-- [x] 1.2 `npm run check` passes with the updated Astro pages and titles.
-- [x] 1.3 `scripts/smoke.mjs` expects ChainTrack on signed-out home and no longer expects starter content.
+- [x] 1.1 `npm run lint` passes after runtime and smoke-test changes. — d4c4d7f
+- [x] 1.2 `npm run check` passes with the updated Astro pages and titles. — d4c4d7f
+- [x] 1.3 `scripts/smoke.mjs` expects ChainTrack on signed-out home and no longer expects starter content. — d4c4d7f
 
 #### Manual
 
-- [x] 1.4 At desktop and mobile widths, `/`, `/auth/signin`, `/auth/signup`, and `/auth/confirm-email` show coherent ChainTrack identity, readable content, and no clipped or overlapping controls.
-- [x] 1.5 Sign-in, sign-up, password visibility, validation/error presentation, confirmation messaging, and navigation remain usable.
-- [x] 1.6 The favicon is legible as a chain-link mark at browser-tab size, and the page title identifies ChainTrack on public and auth routes.
+- [x] 1.4 At desktop and mobile widths, `/`, `/auth/signin`, `/auth/signup`, and `/auth/confirm-email` show coherent ChainTrack identity, readable content, and no clipped or overlapping controls. — d4c4d7f
+- [x] 1.5 Sign-in, sign-up, password visibility, validation/error presentation, confirmation messaging, and navigation remain usable. — d4c4d7f
+- [x] 1.6 The favicon is legible as a chain-link mark at browser-tab size, and the page title identifies ChainTrack on public and auth routes. — d4c4d7f
 
 ### Phase 2: Project Identity, Onboarding, and Verification
 
