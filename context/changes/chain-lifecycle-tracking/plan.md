@@ -487,13 +487,13 @@ No code changes. Fix any defects found back in the phase that owns them.
 
 #### Automated
 
-- [ ] 4.1 Build passes
-- [ ] 4.2 Smoke test passes
+- [x] 4.1 Build passes
+- [x] 4.2 Smoke test passes
 
 #### Manual
 
-- [ ] 4.3 Signed-in `/chains` redirects; signed-out visit goes through auth first
-- [ ] 4.4 Topbar shows no `/chains` link
+- [x] 4.3 Signed-in `/chains` redirects; signed-out visit goes through auth first
+- [x] 4.4 Topbar shows no `/chains` link
 
 ### Phase 5: Final Verification
 
