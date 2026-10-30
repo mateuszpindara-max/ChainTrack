@@ -82,7 +82,7 @@ przebieg łańcuchów bez polegania wyłącznie na odczuciach podczas jazdy.
 
 - FR-004: Użytkownik może utworzyć łańcuch. Priority: must-have
   > Socrates: Rozważono użycie jednego domyślnego łańcucha bez tworzenia go przez użytkownika. Pozostaje w MVP, ponieważ aplikacja ma śledzić osobne łańcuchy.
-- FR-005: Użytkownik może wskazać łańcuch przy aktywności, która jako pierwsza używa go po woskowaniu; ten łańcuch jest uwzględniany przy kolejnych aktywnościach tego samego roweru aż do następnego oznaczenia. Priority: must-have
+- FR-005: Użytkownik może wskazać łańcuch przy aktywności, która jako pierwsza używa go po woskowaniu; ten łańcuch jest uwzględniany przy kolejnych aktywnościach tego samego roweru aż do następnego oznaczenia lub zatrzymania używania łańcucha. Priority: must-have
   > Socrates: Rozważono ręczne przypisywanie łańcucha do każdej aktywności. Użytkownik wskazuje łańcuch raz na początku cyklu woskowania, co ogranicza powtarzalne czynności i zachowuje powiązanie z aktywnością.
 - FR-006: Użytkownik może oznaczyć aktywność jako pierwszą, podczas której używa nowo nawoskowanego łańcucha. Priority: must-have
   > Socrates: Rozważono rejestrowanie woskowania poza listą aktywności. Oznaczenie pierwszej jazdy wiąże początek używania świeżo nawoskowanego łańcucha z właściwą aktywnością.
@@ -90,6 +90,10 @@ przebieg łańcuchów bez polegania wyłącznie na odczuciach podczas jazdy.
   > Socrates: Rozważono ograniczenie widoku do jednego roweru bez osobnego filtra. Pozostaje w MVP, ponieważ użytkownik ma wiele rowerów.
 - FR-008: Użytkownik może filtrować aktywności po łańcuchu. Priority: must-have
   > Socrates: Rozważono odłożenie filtra do czasu dodania metryk łańcucha. Pozostaje w MVP, ponieważ filtrowanie wspiera sprawdzanie i korygowanie oznaczeń cykli woskowania.
+- FR-009: Użytkownik może wyświetlić historię cykli woskowania łańcucha, przebieg bieżących cykli oraz łączny przebieg łańcucha. Priority: must-have
+- FR-010: Użytkownik może ustawić własny próg woskowania dla każdego łańcucha lub skorzystać z sugerowanego progu, gdy jest dostępny. Priority: must-have
+- FR-011: Użytkownik widzi ostrzeżenie przy rowerze używającym łańcucha po osiągnięciu 75% progu woskowania oraz alarm po osiągnięciu 100% progu. Priority: must-have
+- FR-012: Użytkownik może zatrzymać używanie łańcucha, zachowując jego dotychczasowy przebieg; późniejsze aktywności nie są do niego przypisane aż do oznaczenia pierwszej jazdy po ponownym woskowaniu. Ta jazda rozpoczyna nowy cykl i jest uwzględniana w jego przebiegu. Priority: must-have
 
 ## Non-Functional Requirements
 
@@ -100,9 +104,9 @@ przebieg łańcuchów bez polegania wyłącznie na odczuciach podczas jazdy.
 
 ## Business Logic
 
-Użytkownik oznacza aktywność, która jako pierwsza używa nowo nawoskowanego łańcucha, a ten łańcuch obowiązuje kolejne aktywności tego samego roweru aż do następnego oznaczenia.
+Użytkownik oznacza aktywność, która jako pierwsza używa nowo nawoskowanego łańcucha, a ten łańcuch obowiązuje kolejne aktywności tego samego roweru aż do następnego oznaczenia lub zatrzymania używania łańcucha.
 
-Oznaczenie dotyczy początku używania świeżo nawoskowanego łańcucha, a nie czynności wykonanej na końcu oznaczonej aktywności. Metryki przebiegu między woskowaniami pozostają poza zakresem MVP.
+Oznaczenie dotyczy początku używania świeżo nawoskowanego łańcucha, a nie czynności wykonanej na końcu oznaczonej aktywności. Po ukończeniu dwóch cykli aplikacja pokazuje średni przebieg ukończonych cykli wyłącznie informacyjnie; średnia nie zmienia progu woskowania.
 
 ## Access Control
 
@@ -116,8 +120,6 @@ nie są częścią MVP.
 - MVP nie będzie automatycznie rozpoznawać, kiedy łańcuch został nawoskowany;
   użytkownik ręcznie oznacza pierwszą aktywność nowego cyklu, a łańcuch jest
   uwzględniany przy kolejnych aktywnościach tego samego roweru.
-- MVP nie będzie jeszcze pokazywać metryk łańcucha: liczby woskowań, średniego
-  przebiegu i bieżącego przebiegu.
 - MVP nie będzie synchronizować aktywności w tle; aktualizacja jest uruchamiana
   ręcznie.
 - MVP nie będzie obsługiwać wielu użytkowników ani ról administratora.
