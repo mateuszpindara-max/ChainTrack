@@ -15,7 +15,7 @@ export function SubmitButton({ pendingText, icon, children }: SubmitButtonProps)
     <Button
       type="submit"
       disabled={pending}
-      className="w-full rounded-lg bg-purple-600 px-4 py-2 font-medium text-white transition-colors hover:bg-purple-500"
+      className="min-h-11 w-full rounded-md bg-orange-500 px-4 py-2 font-semibold text-white transition-colors hover:bg-orange-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200"
     >
       {pending ? (
         <span className="flex items-center gap-2">

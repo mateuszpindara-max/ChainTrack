@@ -4,8 +4,6 @@ export interface ConfigStatus {
   name: string;
   configured: boolean;
   message: string;
-  docsUrl?: string;
-  docsLabel?: string;
 }
 
 export const configStatuses: ConfigStatus[] = [
@@ -13,8 +11,6 @@ export const configStatuses: ConfigStatus[] = [
     name: "Supabase",
     configured: Boolean(SUPABASE_URL && SUPABASE_KEY),
     message: "Supabase nie jest skonfigurowany — funkcje uwierzytelniania są wyłączone.",
-    docsUrl: "https://github.com/przeprogramowani/10x-astro-starter#supabase-configuration",
-    docsLabel: "Zobacz instrukcję konfiguracji",
   },
 ];
 

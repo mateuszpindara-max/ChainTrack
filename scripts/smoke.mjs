@@ -37,7 +37,15 @@ async function request(path, { method = "GET", form } = {}) {
 }
 
 const steps = [
-  ["signed-out home renders", () => request("/"), { status: 200, bodyIncludes: "10x Astro Starter" }],
+  [
+    "signed-out home renders",
+    () => request("/"),
+    {
+      status: 200,
+      bodyIncludes: "ChainTrack",
+      bodyExcludes: ["starter", "Authentication Ready", "Modern Stack", "Developer Experience"],
+    },
+  ],
   ["dashboard redirects anonymous user", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
   [
     "signup creates account",
@@ -66,7 +74,9 @@ for (const [name, run, expected] of steps) {
   const ok =
     actual.status === expected.status &&
     (expected.location === undefined || actual.location.startsWith(expected.location)) &&
-    (expected.bodyIncludes === undefined || actual.body.includes(expected.bodyIncludes));
+    (expected.bodyIncludes === undefined || actual.body.includes(expected.bodyIncludes)) &&
+    (expected.bodyExcludes === undefined ||
+      expected.bodyExcludes.every((text) => !actual.body.toLowerCase().includes(text.toLowerCase())));
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}  -> ${actual.status} ${actual.location}`);
   if (!ok) {
     failed++;

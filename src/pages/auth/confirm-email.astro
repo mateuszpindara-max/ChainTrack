@@ -18,17 +18,19 @@ const content = isAutoConfirmed
     };
 ---
 
-<Layout title={content.heading}>
-  <div class="bg-cosmic flex min-h-screen items-center justify-center p-4">
-    <div class="w-full max-w-sm rounded-2xl border border-white/10 bg-white/10 p-8 text-center text-white backdrop-blur-xl">
+<Layout title={`${content.heading} | ChainTrack`}>
+  <main class="flex min-h-screen items-center justify-center bg-slate-950 p-4 text-white">
+    <div class="w-full max-w-sm rounded-lg border border-white/10 bg-slate-900/80 p-6 text-center shadow-2xl shadow-black/20 sm:p-8">
+      <p class="mb-4 text-sm font-semibold text-orange-300">ChainTrack</p>
       <div class="mb-4 text-5xl">{content.emoji}</div>
-      <h1 class="mb-3 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-2xl font-bold text-transparent">
-        {content.heading}
-      </h1>
+      <h1 class="mb-3 text-2xl font-semibold">{content.heading}</h1>
       <p class="mb-6 text-blue-100/80">{content.description}</p>
-      <a href="/auth/signin" class="text-sm text-purple-300 hover:underline">
+      <a
+        href="/auth/signin"
+        class="text-sm text-orange-300 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
+      >
         {content.linkText}
       </a>
     </div>
-  </div>
+  </main>
 </Layout>
