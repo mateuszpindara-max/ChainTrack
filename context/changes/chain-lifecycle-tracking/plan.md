@@ -472,28 +472,28 @@ No code changes. Fix any defects found back in the phase that owns them.
 
 #### Automated
 
-- [x] 3.1 Dashboard state tests pass with new selection cases
-- [x] 3.2 Linting passes
-- [x] 3.3 Type checking passes
+- [x] 3.1 Dashboard state tests pass with new selection cases — 707bd23
+- [x] 3.2 Linting passes — 707bd23
+- [x] 3.3 Type checking passes — 707bd23
 
 #### Manual
 
-- [x] 3.4 Chain selection opens details in the main pane
-- [x] 3.5 Cog opens the manage view and CRUD works there
-- [x] 3.6 Bike row alert colors and hover text work; chain items show no color
-- [x] 3.7 Mobile drawer behaves the same
+- [x] 3.4 Chain selection opens details in the main pane — 707bd23
+- [x] 3.5 Cog opens the manage view and CRUD works there — 707bd23
+- [x] 3.6 Bike row alert colors and hover text work; chain items show no color — 707bd23
+- [x] 3.7 Mobile drawer behaves the same — 707bd23
 
 ### Phase 4: Route Consolidation
 
 #### Automated
 
-- [x] 4.1 Build passes
-- [x] 4.2 Smoke test passes
+- [x] 4.1 Build passes — 7e187c4
+- [x] 4.2 Smoke test passes — 7e187c4
 
 #### Manual
 
-- [x] 4.3 Signed-in `/chains` redirects; signed-out visit goes through auth first
-- [x] 4.4 Topbar shows no `/chains` link
+- [x] 4.3 Signed-in `/chains` redirects; signed-out visit goes through auth first — 7e187c4
+- [x] 4.4 Topbar shows no `/chains` link — 7e187c4
 
 ### Phase 5: Final Verification
 
