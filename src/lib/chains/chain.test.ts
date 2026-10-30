@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseChainInput, toChainView } from "./chain.ts";
+import { readFileSync } from "node:fs";
+import { isLifecycleChainView, parseChainInput, toChainView, toLifecycleChainView } from "./chain.ts";
 
 function parseValid(input: unknown) {
   const result = parseChainInput(input);
@@ -53,4 +54,47 @@ void test("chain rows map to the public view shape", () => {
       createdAt: "2026-10-22T12:00:00Z",
     },
   );
+});
+
+void test("lifecycle mapping adds metrics without changing the base DTO", () => {
+  const row = {
+    id: "chain-1",
+    name: "Road",
+    starting_distance_meters: 100,
+    created_at: "2026-10-30",
+    threshold_km: null,
+    stopped_at: null,
+    status: "active" as const,
+    total_distance_meters: 1200,
+    active_distance_meters: 1100,
+    completed_cycle_count: 2,
+    average_completed_distance_meters: 550,
+  };
+  const view = toLifecycleChainView(row);
+  assert.deepEqual(view, {
+    id: "chain-1",
+    name: "Road",
+    startingDistanceMeters: 100,
+    createdAt: "2026-10-30",
+    thresholdKm: null,
+    stoppedAt: null,
+    status: "active",
+    totalDistanceMeters: 1200,
+    activeDistanceMeters: 1100,
+    completedCycleCount: 2,
+    averageCompletedDistanceMeters: 550,
+  });
+  assert.equal(isLifecycleChainView(view), true);
+  assert.equal(isLifecycleChainView(toChainView(row)), false);
+  assert.deepEqual(Object.keys(toChainView(row)).sort(), ["createdAt", "id", "name", "startingDistanceMeters"]);
+});
+
+void test("dashboard starts from metric rows while CRUD routes return base chain views", () => {
+  const dashboard = readFileSync(new URL("../../pages/dashboard.astro", import.meta.url), "utf8");
+  const index = readFileSync(new URL("../../pages/api/chains/index.ts", import.meta.url), "utf8");
+  const item = readFileSync(new URL("../../pages/api/chains/[id].ts", import.meta.url), "utf8");
+  assert.match(dashboard, /\.from\("chain_metrics"\)/);
+  assert.match(dashboard, /\.map\(toLifecycleChainView\)/);
+  assert.match(index, /chain: toChainView\(data\)/);
+  assert.match(item, /chain: toChainView\(data\)/);
 });

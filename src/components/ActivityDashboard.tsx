@@ -3,7 +3,7 @@ import { Menu, Sparkles, X } from "lucide-react";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import YearSummary from "@/components/YearSummary";
 import { useDashboardData } from "@/components/hooks/useDashboardData";
-import type { ChainView } from "@/lib/chains/chain.ts";
+import type { LifecycleChainView } from "@/lib/chains/chain.ts";
 import { formatDistanceKm, formatLocalActivityDate, type ActivityView } from "@/lib/strava/activity-view.ts";
 import type { BikeRow } from "@/lib/strava/activity-view.ts";
 import {
@@ -29,7 +29,7 @@ interface Props {
   initialBikes: BikeRow[];
   initialBikesHasMore: boolean;
   initialBikesError: boolean;
-  initialChains: ChainView[];
+  initialChains: LifecycleChainView[];
   initialChainsHasMore: boolean;
   initialChainsError: boolean;
   initialImportCompleted: boolean;

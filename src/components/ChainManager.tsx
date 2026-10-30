@@ -1,6 +1,12 @@
 import { useState, type SyntheticEvent } from "react";
 import { formatDistanceKm } from "@/lib/strava/activity-view.ts";
-import { parseChainInput, type ChainFieldErrors, type ChainView } from "@/lib/chains/chain.ts";
+import {
+  isLifecycleChainView,
+  parseChainInput,
+  type ChainFieldErrors,
+  type ChainView,
+  type LifecycleChainView,
+} from "@/lib/chains/chain.ts";
 
 interface Props {
   initialChains: ChainView[];
@@ -9,7 +15,7 @@ interface Props {
 }
 
 interface ChainPage {
-  chains: ChainView[];
+  chains: LifecycleChainView[];
   hasMore: boolean;
 }
 
@@ -32,7 +38,7 @@ function isChainView(value: unknown): value is ChainView {
 function isChainPage(value: unknown): value is ChainPage {
   if (typeof value !== "object" || value === null) return false;
   const page = value as Record<string, unknown>;
-  return Array.isArray(page.chains) && page.chains.every(isChainView) && typeof page.hasMore === "boolean";
+  return Array.isArray(page.chains) && page.chains.every(isLifecycleChainView) && typeof page.hasMore === "boolean";
 }
 
 function readApiError(value: unknown, fallback: string): ApiError {

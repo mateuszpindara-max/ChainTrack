@@ -447,26 +447,26 @@ No code changes. Fix any defects found back in the phase that owns them.
 
 #### Automated
 
-- [x] 1.1 Migration applies on a fresh local database
-- [x] 1.2 pgTAP suite passes, including any updated count
-- [x] 1.3 Type checking passes after database typings change
+- [x] 1.1 Migration applies on a fresh local database — e53c263
+- [x] 1.2 pgTAP suite passes, including any updated count — e53c263
+- [x] 1.3 Type checking passes after database typings change — e53c263
 
 #### Manual
 
-- [x] 1.4 Seeded fixture produces expected totals in Supabase Studio
+- [x] 1.4 Seeded fixture produces expected totals in Supabase Studio — e53c263
 
 ### Phase 2: Domain Logic and API
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass
-- [ ] 2.2 Type checking passes
-- [ ] 2.3 Linting passes
+- [x] 2.1 Unit tests pass
+- [x] 2.2 Type checking passes
+- [x] 2.3 Linting passes
 
 #### Manual
 
-- [ ] 2.4 Signed-in API calls return expected status codes and totals
-- [ ] 2.5 Suggested default is sourced and recorded, or the constant is null and the brief says so
+- [x] 2.4 Signed-in API calls return expected status codes and totals
+- [x] 2.5 Suggested default is sourced and recorded, or the constant is null and the brief says so
 
 ### Phase 3: Main-Pane Navigation and Alerts
 

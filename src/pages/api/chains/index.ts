@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { parseChainInput, toChainView } from "@/lib/chains/chain.ts";
+import { LIFECYCLE_CHAIN_COLUMNS, parseChainInput, toChainView, toLifecycleChainView } from "@/lib/chains/chain.ts";
 import type { ChainsDatabase } from "@/lib/chains/database.ts";
 import { createClient } from "@/lib/supabase";
 
@@ -30,8 +30,8 @@ export const GET: APIRoute = async (context) => {
 
   const db = supabase as unknown as SupabaseClient<ChainsDatabase>;
   const { data, error } = await db
-    .from("chains")
-    .select(CHAIN_COLUMNS)
+    .from("chain_metrics")
+    .select(LIFECYCLE_CHAIN_COLUMNS)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
@@ -40,7 +40,7 @@ export const GET: APIRoute = async (context) => {
   if (error) return Response.json({ message: "Could not load chains." }, { status: 503 });
 
   return Response.json({
-    chains: data.slice(0, PAGE_SIZE).map(toChainView),
+    chains: data.slice(0, PAGE_SIZE).map(toLifecycleChainView),
     hasMore: data.length > PAGE_SIZE,
   });
 };

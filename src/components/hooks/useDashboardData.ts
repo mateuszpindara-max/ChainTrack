@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef, useState } from "react";
-import type { ChainView } from "@/lib/chains/chain.ts";
+import { isLifecycleChainView, type LifecycleChainView } from "@/lib/chains/chain.ts";
 import type { ActivityView, BikeRow } from "@/lib/strava/activity-view.ts";
 import { getLocalYearInterval, type DashboardSummary } from "@/lib/strava/dashboard-summary.ts";
 import {
@@ -26,7 +26,7 @@ interface DashboardDataOptions {
   initialBikes: BikeRow[];
   initialBikesHasMore: boolean;
   initialBikesError: boolean;
-  initialChains: ChainView[];
+  initialChains: LifecycleChainView[];
   initialChainsHasMore: boolean;
   initialChainsError: boolean;
 }
@@ -73,16 +73,7 @@ function isBike(value: unknown): value is BikeRow {
   );
 }
 
-function isChain(value: unknown): value is ChainView {
-  if (typeof value !== "object" || value === null) return false;
-  const chain = value as Record<string, unknown>;
-  return (
-    typeof chain.id === "string" &&
-    typeof chain.name === "string" &&
-    typeof chain.startingDistanceMeters === "number" &&
-    typeof chain.createdAt === "string"
-  );
-}
+const isChain = isLifecycleChainView;
 
 function isActivityPage(value: unknown): value is { activities: ActivityView[]; hasMore: boolean } {
   if (typeof value !== "object" || value === null) return false;
@@ -323,7 +314,7 @@ export function useDashboardData(options: DashboardDataOptions) {
             "Chains could not be loaded.",
           );
           if (!isPage(payload, "chains", isChain)) throw new Error("The chain page returned an invalid response.");
-          items = payload.chains as ChainView[];
+          items = payload.chains as LifecycleChainView[];
           hasMore = payload.hasMore;
         }
         while (hasMore && !controller.signal.aborted) {
@@ -332,7 +323,7 @@ export function useDashboardData(options: DashboardDataOptions) {
             "More chains could not be loaded.",
           );
           if (!isPage(payload, "chains", isChain)) throw new Error("The chain page returned an invalid response.");
-          items = [...items, ...(payload.chains as ChainView[])];
+          items = [...items, ...(payload.chains as LifecycleChainView[])];
           hasMore = payload.hasMore;
         }
         if (!controller.signal.aborted && isCurrentDashboardRequest(stateRef.current, key)) {
@@ -400,7 +391,7 @@ export function useDashboardData(options: DashboardDataOptions) {
       if (!isCurrentDashboardRequest(stateRef.current, key)) return;
       setChains((current) => ({
         ...current,
-        items: [...current.items, ...(payload.chains as ChainView[])],
+        items: [...current.items, ...(payload.chains as LifecycleChainView[])],
         hasMore: payload.hasMore,
         loadingMore: false,
         loadMoreError: null,

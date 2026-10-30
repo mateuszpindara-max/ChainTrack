@@ -3,7 +3,7 @@ import ActivityDashboard from "@/components/ActivityDashboard";
 import Layout from "@/layouts/Layout.astro";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BikeRow } from "@/lib/strava/activity-view.ts";
-import { toChainView, type ChainView } from "@/lib/chains/chain.ts";
+import { LIFECYCLE_CHAIN_COLUMNS, toLifecycleChainView, type LifecycleChainView } from "@/lib/chains/chain.ts";
 import type { ChainsDatabase } from "@/lib/chains/database.ts";
 import { createClient } from "@/lib/supabase";
 import type { StravaSyncDatabase } from "@/lib/strava/sync-database.ts";
@@ -16,7 +16,7 @@ let connectionStatus: "connected" | "not-connected" | "unavailable" = "unavailab
 let initialBikes: BikeRow[] = [];
 let initialBikesHasMore = false;
 let initialBikesError = false;
-let initialChains: ChainView[] = [];
+let initialChains: LifecycleChainView[] = [];
 let initialChainsHasMore = false;
 let initialChainsError = false;
 let initialImportCompleted = false;
@@ -35,8 +35,8 @@ if (supabase && user) {
       .order("id", { ascending: true })
       .range(0, 100),
     chainsDb
-      .from("chains")
-      .select("id, name, starting_distance_meters, created_at")
+      .from("chain_metrics")
+      .select(LIFECYCLE_CHAIN_COLUMNS)
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .order("id", { ascending: false })
@@ -52,7 +52,7 @@ if (supabase && user) {
     initialChainsError = true;
   } else {
     initialChainsHasMore = chainRows.length > 100;
-    initialChains = chainRows.slice(0, 100).map(toChainView);
+    initialChains = chainRows.slice(0, 100).map(toLifecycleChainView);
   }
 
   const { data: connection, error: connectionError } = await db

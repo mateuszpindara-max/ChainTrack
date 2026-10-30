@@ -17,6 +17,29 @@ export interface ChainRow {
   created_at: string;
 }
 
+export interface LifecycleChainRow extends ChainRow {
+  threshold_km: number | null;
+  stopped_at: string | null;
+  status: "active" | "stopped" | "not_started";
+  total_distance_meters: number;
+  active_distance_meters: number;
+  completed_cycle_count: number;
+  average_completed_distance_meters: number | null;
+}
+
+export interface LifecycleChainView extends ChainView {
+  thresholdKm: number | null;
+  stoppedAt: string | null;
+  status: LifecycleChainRow["status"];
+  totalDistanceMeters: number;
+  activeDistanceMeters: number;
+  completedCycleCount: number;
+  averageCompletedDistanceMeters: number | null;
+}
+
+export const LIFECYCLE_CHAIN_COLUMNS =
+  "id, name, starting_distance_meters, created_at, threshold_km, stopped_at, status, total_distance_meters, active_distance_meters, completed_cycle_count, average_completed_distance_meters";
+
 export type ChainFieldErrors = Partial<Record<"name" | "startingKm", string>>;
 
 export type ParseChainInputResult =
@@ -101,4 +124,34 @@ export function toChainView(row: ChainRow): ChainView {
     startingDistanceMeters: row.starting_distance_meters,
     createdAt: row.created_at,
   };
+}
+
+export function toLifecycleChainView(row: LifecycleChainRow): LifecycleChainView {
+  return {
+    ...toChainView(row),
+    thresholdKm: row.threshold_km,
+    stoppedAt: row.stopped_at,
+    status: row.status,
+    totalDistanceMeters: row.total_distance_meters,
+    activeDistanceMeters: row.active_distance_meters,
+    completedCycleCount: row.completed_cycle_count,
+    averageCompletedDistanceMeters: row.average_completed_distance_meters,
+  };
+}
+
+export function isLifecycleChainView(value: unknown): value is LifecycleChainView {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.id === "string" &&
+    typeof value.name === "string" &&
+    typeof value.startingDistanceMeters === "number" &&
+    typeof value.createdAt === "string" &&
+    (value.thresholdKm === null || typeof value.thresholdKm === "number") &&
+    (value.stoppedAt === null || typeof value.stoppedAt === "string") &&
+    (value.status === "active" || value.status === "stopped" || value.status === "not_started") &&
+    typeof value.totalDistanceMeters === "number" &&
+    typeof value.activeDistanceMeters === "number" &&
+    typeof value.completedCycleCount === "number" &&
+    (value.averageCompletedDistanceMeters === null || typeof value.averageCompletedDistanceMeters === "number")
+  );
 }

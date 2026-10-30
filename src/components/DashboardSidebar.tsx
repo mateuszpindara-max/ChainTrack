@@ -1,4 +1,4 @@
-import type { ChainView } from "@/lib/chains/chain.ts";
+import type { LifecycleChainView } from "@/lib/chains/chain.ts";
 import type { BikeRow } from "@/lib/strava/activity-view.ts";
 import type { DashboardSelection } from "@/lib/strava/dashboard-state.ts";
 
@@ -14,7 +14,7 @@ interface ListState<T> {
 interface Props {
   selection: DashboardSelection;
   bikes: ListState<BikeRow>;
-  chains: ListState<ChainView>;
+  chains: ListState<LifecycleChainView>;
   onSelectSummary: () => void;
   onSelectAllBikes: () => void;
   onSelectBike: (bikeId: string) => void;

@@ -73,6 +73,26 @@ try {
   await insert("chains", { id: firstChainId, user_id: userId, name: "First" });
   await insert("chains", { id: secondChainId, user_id: userId, name: "Second" });
 
+  const createdResponse = await request("/api/chains", { method: "POST", json: { name: "Created", startingKm: 1 } });
+  assert.equal(createdResponse.status, 201);
+  const created = (await createdResponse.json()).chain;
+  const baseKeys = ["createdAt", "id", "name", "startingDistanceMeters"];
+  assert.deepEqual(Object.keys(created).sort(), baseKeys);
+  const updatedResponse = await request(`/api/chains/${created.id}`, {
+    method: "PATCH",
+    json: { name: "Updated", startingKm: 2 },
+  });
+  assert.equal(updatedResponse.status, 200);
+  assert.deepEqual(Object.keys((await updatedResponse.json()).chain).sort(), baseKeys);
+  const chainList = await request("/api/chains");
+  assert.equal(chainList.status, 200);
+  assert.equal((await chainList.json()).chains.find((chain) => chain.id === created.id).totalDistanceMeters, 2000);
+  const dashboard = await request("/dashboard");
+  assert.equal(dashboard.status, 200);
+  const dashboardHtml = await dashboard.text();
+  assert.ok(dashboardHtml.includes("initialChains"));
+  assert.ok(dashboardHtml.includes("totalDistanceMeters"));
+
   const path = `/api/strava/activities/${activityId}/waxing`;
   assert.equal((await request(path, { method: "PUT", json: { chainId: firstChainId }, cookie: false })).status, 401);
   assert.equal((await request(path, { method: "PUT" })).status, 415);
@@ -92,6 +112,50 @@ try {
     assert.equal(data?.chain_id ?? null, chainId);
   }
   console.log("PASS: authenticated waxing route validates, inserts, retries, reassigns, and clears marks");
+
+  assert.equal((await request(path, { method: "PUT", json: { chainId: firstChainId } })).status, 200);
+  const metricsPath = `/api/chains/${firstChainId}/metrics`;
+  const metrics = await request(metricsPath);
+  assert.equal(metrics.status, 200);
+  const metricBody = await metrics.json();
+  assert.equal(metricBody.chain.activeDistanceMeters, 30000);
+  assert.equal(metricBody.cycles.length, 1);
+  assert.equal(metricBody.hasMore, false);
+  assert.equal((await request(`/api/chains/${randomUUID()}/metrics`)).status, 404);
+
+  const thresholdPath = `/api/chains/${firstChainId}/threshold`;
+  assert.equal((await request(thresholdPath, { method: "PATCH" })).status, 415);
+  assert.equal((await request(thresholdPath, { method: "PATCH", json: { thresholdKm: 0 } })).status, 400);
+  assert.equal((await request(thresholdPath, { method: "PATCH", json: { thresholdKm: 100.01 } })).status, 400);
+  assert.equal(
+    (await request(`/api/chains/${randomUUID()}/threshold`, { method: "PATCH", json: { thresholdKm: 100 } })).status,
+    404,
+  );
+  assert.equal((await request(thresholdPath, { method: "PATCH", json: { thresholdKm: 100.5 } })).status, 200);
+  const statuses = await request("/api/chains/bike-status");
+  assert.equal(statuses.status, 200);
+  assert.deepEqual((await statuses.json()).statuses, [
+    {
+      bikeId,
+      chainId: firstChainId,
+      chainName: "First",
+      activeDistanceMeters: 30000,
+      thresholdKm: 100.5,
+      status: "active",
+    },
+  ]);
+
+  const stopPath = `/api/chains/${firstChainId}/stop`;
+  assert.equal((await request(stopPath, { method: "POST" })).status, 200);
+  assert.equal((await request(stopPath, { method: "POST" })).status, 200);
+  const { data: stops, error: stopsError } = await client
+    .from("chain_stop_events")
+    .select("id")
+    .eq("chain_id", firstChainId);
+  if (stopsError) throw stopsError;
+  assert.equal(stops.length, 1);
+  assert.deepEqual((await (await request("/api/chains/bike-status")).json()).statuses, []);
+  console.log("PASS: lifecycle API returns metrics, validates thresholds, and stops idempotently");
 } finally {
   if (userId) {
     assert.match(userId, /^[0-9a-f-]{36}$/i);

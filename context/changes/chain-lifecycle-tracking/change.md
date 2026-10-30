@@ -3,7 +3,7 @@ change_id: chain-lifecycle-tracking
 title: Track chain lifecycle and waxing wear
 status: implementing
 created: 2026-10-29
-updated: 2026-10-29
+updated: 2026-10-30
 archived_at: null
 ---
 

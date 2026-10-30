@@ -68,7 +68,7 @@ The governing-mark rule in `activities_with_chain` uses persistent stop and reat
 
 ## Open Risks & Assumptions
 
-- The suggested threshold default has no verified source yet. If none is found in Phase 2, the constant stays `null` and the threshold must be entered manually. This is not blocking.
+- The suggested threshold is 300 km, based on Zero Friction Cycling's recommendation for normal dry-road conditions ([waxing guide](https://zerofrictioncycling.com.au/wax-instructions/), accessed 2026-10-30). Wet conditions require earlier maintenance; users can override the suggestion.
 - A chain marked on two bikes without a stop keeps two open cycles. Active mileage is the sum across bikes, so both bike rows show the same chain total. This follows from the per-bike model.
 - Stop uses the moment the action is confirmed; a stop cannot be backdated in this change.
 - Stop events persist across repeated stops and reattachments. A mark on a ride at or before a stop is a historical correction, not a reattachment; only a ride starting strictly after the stop can reopen the chain.
