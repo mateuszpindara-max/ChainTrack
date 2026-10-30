@@ -1,0 +1,116 @@
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { URL } from "node:url";
+import { createClient } from "@supabase/supabase-js";
+
+process.loadEnvFile(".dev.vars");
+const baseUrl = process.env.BASE_URL ?? "http://127.0.0.1:4339";
+const databaseUrl = process.env.SUPABASE_URL;
+const databaseKey = process.env.SUPABASE_KEY;
+for (const value of [baseUrl, databaseUrl]) {
+  const url = new URL(value);
+  assert.ok(["localhost", "127.0.0.1"].includes(url.hostname), "integration tests require localhost");
+}
+assert.equal(new URL(databaseUrl).port, "54321", "integration tests require local Supabase");
+assert.ok(databaseKey, "SUPABASE_KEY is required");
+
+const email = `waxing-integration-${randomUUID()}@example.test`;
+const password = "Waxing-Integration-Password-1!";
+const client = createClient(databaseUrl, databaseKey, { auth: { persistSession: false } });
+const cookies = new Map();
+let userId;
+
+async function request(path, { method = "GET", form, json, cookie = true } = {}) {
+  const response = await fetch(new URL(path, baseUrl), {
+    method,
+    redirect: "manual",
+    headers: {
+      Origin: baseUrl,
+      ...(cookie ? { Cookie: [...cookies].map(([name, value]) => `${name}=${value}`).join("; ") } : {}),
+      ...(form ? { "Content-Type": "application/x-www-form-urlencoded" } : {}),
+      ...(json !== undefined ? { "Content-Type": "application/json" } : {}),
+    },
+    body: form ? new URLSearchParams(form) : json !== undefined ? JSON.stringify(json) : undefined,
+  });
+  for (const raw of response.headers.getSetCookie()) {
+    const [pair] = raw.split(";");
+    const index = pair.indexOf("=");
+    cookies.set(pair.slice(0, index), pair.slice(index + 1));
+  }
+  return response;
+}
+
+async function insert(table, row) {
+  const { error } = await client.from(table).insert(row);
+  if (error) throw new Error(`Could not create ${table} fixture: ${error.message}`);
+}
+
+try {
+  const signup = await request("/api/auth/signup", { method: "POST", form: { email, password } });
+  assert.equal(signup.status, 302);
+  assert.ok(signup.headers.get("location")?.startsWith("/auth/confirm-email"), "signup must succeed");
+  const { data: session, error: loginError } = await client.auth.signInWithPassword({ email, password });
+  if (loginError) throw loginError;
+  userId = session.user.id;
+  const signin = await request("/api/auth/signin", { method: "POST", form: { email, password } });
+  assert.equal(signin.headers.get("location"), "/dashboard");
+
+  const bikeId = randomUUID();
+  const activityId = randomUUID();
+  const firstChainId = randomUUID();
+  const secondChainId = randomUUID();
+  await insert("bikes", { id: bikeId, user_id: userId, strava_gear_id: `integration-${bikeId}`, name: "Bike" });
+  await insert("activities", {
+    id: activityId,
+    user_id: userId,
+    bike_id: bikeId,
+    strava_activity_id: Math.floor(Date.now() / 1000),
+    name: "Ride",
+    distance_meters: 30000,
+    started_at: new Date().toISOString(),
+  });
+  await insert("chains", { id: firstChainId, user_id: userId, name: "First" });
+  await insert("chains", { id: secondChainId, user_id: userId, name: "Second" });
+
+  const path = `/api/strava/activities/${activityId}/waxing`;
+  assert.equal((await request(path, { method: "PUT", json: { chainId: firstChainId }, cookie: false })).status, 401);
+  assert.equal((await request(path, { method: "PUT" })).status, 415);
+  assert.equal((await request(path, { method: "PUT", json: { chainId: "bad" } })).status, 400);
+  assert.equal((await request(path, { method: "PUT", json: { chainId: randomUUID() } })).status, 404);
+
+  for (const chainId of [firstChainId, firstChainId, secondChainId, null, null]) {
+    const response = await request(path, { method: "PUT", json: { chainId } });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { waxing: { activityId, chainId } });
+    const { data, error } = await client
+      .from("chain_waxing_marks")
+      .select("chain_id")
+      .eq("activity_id", activityId)
+      .maybeSingle();
+    if (error) throw error;
+    assert.equal(data?.chain_id ?? null, chainId);
+  }
+  console.log("PASS: authenticated waxing route validates, inserts, retries, reassigns, and clears marks");
+} finally {
+  if (userId) {
+    assert.match(userId, /^[0-9a-f-]{36}$/i);
+    execFileSync(
+      "docker",
+      [
+        "exec",
+        "supabase_db_10x-astro-starter",
+        "psql",
+        "-U",
+        "postgres",
+        "-d",
+        "postgres",
+        "-v",
+        "ON_ERROR_STOP=1",
+        "-c",
+        `delete from auth.users where id = '${userId}'`,
+      ],
+      { stdio: "ignore" },
+    );
+  }
+}

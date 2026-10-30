@@ -436,24 +436,24 @@ No code changes. Fix any defects found back in the phase that owns them.
 
 #### Automated
 
-- [x] 0.1 PRD defines FR-009 to FR-012, each exactly once
-- [x] 0.2 Removed Non-Goal is gone from the PRD
+- [x] 0.1 PRD defines FR-009 to FR-012, each exactly once — 384984b
+- [x] 0.2 Removed Non-Goal is gone from the PRD — 384984b
 
 #### Manual
 
-- [x] 0.3 User approves the amended PRD wording
+- [x] 0.3 User approves the amended PRD wording — 384984b
 
 ### Phase 1: Data Model and SQL Metrics
 
 #### Automated
 
-- [ ] 1.1 Migration applies on a fresh local database
-- [ ] 1.2 pgTAP suite passes, including any updated count
-- [ ] 1.3 Type checking passes after database typings change
+- [x] 1.1 Migration applies on a fresh local database
+- [x] 1.2 pgTAP suite passes, including any updated count
+- [x] 1.3 Type checking passes after database typings change
 
 #### Manual
 
-- [ ] 1.4 Seeded fixture produces expected totals in Supabase Studio
+- [x] 1.4 Seeded fixture produces expected totals in Supabase Studio
 
 ### Phase 2: Domain Logic and API
 

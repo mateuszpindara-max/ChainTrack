@@ -1,6 +1,6 @@
 begin;
 
-select plan(42);
+select plan(44);
 
 insert into auth.users (id, aud, role, email, encrypted_password, email_confirmed_at)
 values
@@ -62,16 +62,18 @@ select throws_ok(
 );
 select throws_ok(
   $$insert into public.chain_waxing_marks (user_id, activity_id, chain_id) values (auth.uid(), '10000000-0000-0000-0000-000000000101', '20000000-0000-0000-0000-000000000222')$$,
-  '23503', null, 'user cannot reference another user chain'
+  '42501', null, 'direct mark inserts are forbidden even for the user own activity'
 );
 select throws_ok(
   $$insert into public.chain_waxing_marks (user_id, activity_id, chain_id) values (auth.uid(), '20000000-0000-0000-0000-000000000302', '10000000-0000-0000-0000-000000000111')$$,
-  '23503', null, 'user cannot reference another user activity'
+  '42501', null, 'direct mark inserts cannot reference another user activity'
 );
 select throws_ok(
   $$insert into public.chain_waxing_marks (user_id, activity_id, chain_id) values (auth.uid(), '10000000-0000-0000-0000-000000000102', '10000000-0000-0000-0000-000000000112')$$,
-  '23505', null, 'an activity can have only one waxing mark'
+  '42501', null, 'direct updates to an existing mark are forbidden'
 );
+select is(public.set_chain_waxing_mark('10000000-0000-0000-0000-000000000101', '20000000-0000-0000-0000-000000000222'), 'chain-not-found', 'function refuses another user chain');
+select is(public.set_chain_waxing_mark('20000000-0000-0000-0000-000000000302', '10000000-0000-0000-0000-000000000111'), 'activity-not-found', 'function refuses another user activity');
 
 select is((select chain_id from public.activities_with_chain where id = '10000000-0000-0000-0000-000000000101'), null::uuid, 'ride before its first mark has no chain despite a mark on another bike');
 select is((select chain_id from public.activities_with_chain where id = '10000000-0000-0000-0000-000000000102'), '10000000-0000-0000-0000-000000000111'::uuid, 'marked ride carries its selected chain');

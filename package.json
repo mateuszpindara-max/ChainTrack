@@ -11,6 +11,8 @@
     "wrangler:types": "wrangler types",
     "validate:config": "npm run check && npm run wrangler:types",
     "test": "node --experimental-strip-types --test src/lib/strava/*.test.ts src/lib/chains/*.test.ts",
+    "test:waxing-integration": "node scripts/waxing-integration.mjs",
+    "test:chain-concurrency": "node scripts/chain-concurrency.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
