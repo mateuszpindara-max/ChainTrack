@@ -1,4 +1,5 @@
 import { useState, type SyntheticEvent } from "react";
+import { Button } from "@/components/ui/button";
 import { formatDistanceKm } from "@/lib/strava/activity-view.ts";
 import {
   isLifecycleChainView,
@@ -230,26 +231,25 @@ export default function ChainManager({
   return (
     <Container
       className={
-        embedded ? "w-full text-white" : "mx-auto min-h-screen w-full max-w-6xl px-5 py-8 text-white sm:px-8 sm:py-12"
+        embedded
+          ? "text-foreground w-full"
+          : "text-foreground mx-auto min-h-screen w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-12"
       }
     >
       {!embedded && (
-        <header className="flex flex-wrap items-start justify-between gap-6 border-b border-white/15 pb-8">
+        <header className="border-border flex flex-wrap items-start justify-between gap-6 border-b pb-8">
           <div>
-            <p className="text-sm font-semibold text-orange-300 uppercase">ChainTrack</p>
+            <p className="text-primary text-sm font-semibold uppercase">ChainTrack</p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Your chains</h1>
-            <p className="mt-2 text-sm text-blue-100/70">Track starting mileage for each chain.</p>
+            <p className="text-muted-foreground/80 mt-2 text-sm">Track starting mileage for each chain.</p>
           </div>
-          <a
-            href="/dashboard"
-            className="inline-flex min-h-10 items-center rounded-md border border-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
-          >
-            Back to dashboard
-          </a>
+          <Button asChild variant="outline" className="min-h-10">
+            <a href="/dashboard">Back to dashboard</a>
+          </Button>
         </header>
       )}
 
-      <section className="border-b border-white/15 py-7" aria-labelledby="create-chain-heading">
+      <section className="border-border border-b py-7" aria-labelledby="create-chain-heading">
         <h2 id="create-chain-heading" className="text-xl font-semibold">
           Add a chain
         </h2>
@@ -258,7 +258,7 @@ export default function ChainManager({
           onSubmit={createChain}
         >
           <div className="grid gap-2">
-            <label htmlFor="chain-name" className="text-sm font-medium text-blue-100/85">
+            <label htmlFor="chain-name" className="text-muted-foreground/90 text-sm font-medium">
               Name
             </label>
             <input
@@ -274,18 +274,18 @@ export default function ChainManager({
               }}
               aria-invalid={Boolean(fieldErrors.name)}
               aria-describedby={fieldErrors.name ? "chain-name-error" : undefined}
-              className="min-h-11 rounded-md border border-white/20 bg-slate-950/60 px-3 text-white placeholder:text-blue-100/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
+              className="border-border bg-input text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-ring focus-visible:ring-offset-background min-h-11 rounded-md border px-3 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
               autoComplete="off"
             />
             {fieldErrors.name && (
-              <p id="chain-name-error" className="text-sm text-rose-200" aria-live="polite">
+              <p id="chain-name-error" className="text-destructive text-sm" aria-live="polite">
                 {fieldErrors.name}
               </p>
             )}
           </div>
           <div className="grid gap-2">
-            <label htmlFor="chain-starting-km" className="text-sm font-medium text-blue-100/85">
-              Starting km <span className="font-normal text-blue-100/55">(optional)</span>
+            <label htmlFor="chain-starting-km" className="text-muted-foreground/90 text-sm font-medium">
+              Starting km <span className="text-muted-foreground/70 font-normal">(optional)</span>
             </label>
             <input
               id="chain-starting-km"
@@ -301,57 +301,53 @@ export default function ChainManager({
               }}
               aria-invalid={Boolean(fieldErrors.startingKm)}
               aria-describedby={fieldErrors.startingKm ? "chain-starting-km-error" : undefined}
-              className="min-h-11 rounded-md border border-white/20 bg-slate-950/60 px-3 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
+              className="border-border bg-input text-foreground focus-visible:ring-ring focus-visible:ring-offset-background min-h-11 rounded-md border px-3 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
             />
             {fieldErrors.startingKm && (
-              <p id="chain-starting-km-error" className="text-sm text-rose-200" aria-live="polite">
+              <p id="chain-starting-km-error" className="text-destructive text-sm" aria-live="polite">
                 {fieldErrors.startingKm}
               </p>
             )}
           </div>
-          <button
-            type="submit"
-            disabled={creating}
-            className="inline-flex min-h-11 items-center justify-center rounded-md bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200 disabled:cursor-wait disabled:opacity-60"
-          >
+          <Button type="submit" disabled={creating} size="lg" className="min-h-11">
             {creating ? "Adding chain..." : "Add chain"}
-          </button>
+          </Button>
         </form>
       </section>
 
       <section className="py-7" aria-labelledby="chains-heading">
-        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-white/15 pb-4">
+        <div className="border-border flex flex-wrap items-end justify-between gap-3 border-b pb-4">
           <div>
-            <p className="text-xs font-semibold text-blue-100/55 uppercase">Maintenance</p>
+            <p className="text-muted-foreground/70 text-xs font-semibold uppercase">Maintenance</p>
             <h2 id="chains-heading" className="mt-2 text-xl font-semibold">
               Chains
             </h2>
           </div>
-          <p className="text-sm text-blue-100/60">
+          <p className="text-muted-foreground/75 text-sm">
             {chains.length} {chains.length === 1 ? "chain" : "chains"}
           </p>
         </div>
 
         {initialLoadError && (
-          <p className="border-b border-white/10 py-4 text-sm text-amber-200" role="status" aria-live="polite">
+          <p className="border-border/70 text-warning border-b py-4 text-sm" role="status" aria-live="polite">
             Chains could not be loaded. You can still add a chain.
           </p>
         )}
         {status && (
-          <p className="border-b border-white/10 py-4 text-sm text-emerald-200" role="status" aria-live="polite">
+          <p className="border-border/70 text-success border-b py-4 text-sm" role="status" aria-live="polite">
             {status}
           </p>
         )}
         {error && (
-          <p className="border-b border-white/10 py-4 text-sm text-rose-200" role="status" aria-live="polite">
+          <p className="border-border/70 text-destructive border-b py-4 text-sm" role="status" aria-live="polite">
             {error}
           </p>
         )}
 
         {chains.length === 0 ? (
-          <p className="py-8 text-sm text-blue-100/65">No chains yet.</p>
+          <p className="text-muted-foreground/80 py-8 text-sm">No chains yet.</p>
         ) : (
-          <ul className="divide-y divide-white/10">
+          <ul className="divide-border/70 divide-y">
             {chains.map((chain) => (
               <li key={chain.id} className="grid gap-4 py-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-6">
                 {editingId === chain.id ? (
@@ -362,7 +358,10 @@ export default function ChainManager({
                     }}
                   >
                     <div className="grid gap-2">
-                      <label htmlFor={`edit-chain-name-${chain.id}`} className="text-sm font-medium text-blue-100/85">
+                      <label
+                        htmlFor={`edit-chain-name-${chain.id}`}
+                        className="text-muted-foreground/90 text-sm font-medium"
+                      >
                         Name
                       </label>
                       <input
@@ -377,13 +376,13 @@ export default function ChainManager({
                         }}
                         aria-invalid={Boolean(editFieldErrors.name)}
                         aria-describedby={editFieldErrors.name ? `edit-chain-name-error-${chain.id}` : undefined}
-                        className="min-h-11 rounded-md border border-white/20 bg-slate-950/60 px-3 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
+                        className="border-border bg-input text-foreground focus-visible:ring-ring focus-visible:ring-offset-background min-h-11 rounded-md border px-3 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                         autoComplete="off"
                       />
                       {editFieldErrors.name && (
                         <p
                           id={`edit-chain-name-error-${chain.id}`}
-                          className="text-sm text-rose-200"
+                          className="text-destructive text-sm"
                           aria-live="polite"
                         >
                           {editFieldErrors.name}
@@ -391,7 +390,10 @@ export default function ChainManager({
                       )}
                     </div>
                     <div className="grid gap-2">
-                      <label htmlFor={`edit-chain-km-${chain.id}`} className="text-sm font-medium text-blue-100/85">
+                      <label
+                        htmlFor={`edit-chain-km-${chain.id}`}
+                        className="text-muted-foreground/90 text-sm font-medium"
+                      >
                         Starting km
                       </label>
                       <input
@@ -407,81 +409,85 @@ export default function ChainManager({
                         }}
                         aria-invalid={Boolean(editFieldErrors.startingKm)}
                         aria-describedby={editFieldErrors.startingKm ? `edit-chain-km-error-${chain.id}` : undefined}
-                        className="min-h-11 rounded-md border border-white/20 bg-slate-950/60 px-3 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
+                        className="border-border bg-input text-foreground focus-visible:ring-ring focus-visible:ring-offset-background min-h-11 rounded-md border px-3 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                       />
                       {editFieldErrors.startingKm && (
-                        <p id={`edit-chain-km-error-${chain.id}`} className="text-sm text-rose-200" aria-live="polite">
+                        <p
+                          id={`edit-chain-km-error-${chain.id}`}
+                          className="text-destructive text-sm"
+                          aria-live="polite"
+                        >
                           {editFieldErrors.startingKm}
                         </p>
                       )}
                     </div>
-                    <button
-                      type="submit"
-                      disabled={savingId === chain.id}
-                      className="min-h-11 rounded-md bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200 disabled:cursor-wait disabled:opacity-60"
-                    >
+                    <Button type="submit" disabled={savingId === chain.id} className="min-h-11">
                       {savingId === chain.id ? "Saving..." : "Save"}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       onClick={() => {
                         setEditingId(null);
                       }}
                       disabled={savingId === chain.id}
-                      className="min-h-11 rounded-md border border-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:opacity-60"
+                      variant="outline"
+                      className="min-h-11"
                     >
                       Cancel
-                    </button>
+                    </Button>
                   </form>
                 ) : (
                   <>
                     <div className="min-w-0">
-                      <h3 className="truncate text-base font-medium text-white">{chain.name}</h3>
-                      <p className="mt-1 text-sm text-blue-100/60">Starting mileage</p>
+                      <h3 className="text-foreground truncate text-base font-medium">{chain.name}</h3>
+                      <p className="text-muted-foreground/75 mt-1 text-sm">Starting mileage</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-5 gap-y-2 sm:justify-end">
-                      <span className="text-sm font-medium text-white">
+                      <span className="text-foreground text-sm font-medium">
                         {formatDistanceKm(chain.startingDistanceMeters)}
                       </span>
                       {confirmDeleteId === chain.id ? (
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="mr-2 basis-full text-sm text-amber-200 sm:basis-auto">
+                          <p className="text-warning mr-2 basis-full text-sm sm:basis-auto">
                             Deleting this chain cannot be undone. Rides covered by it will show no chain afterward; the
                             marked ride will show Chain removed.
                           </p>
-                          <button
+                          <Button
                             type="button"
                             onClick={() => {
                               void deleteChain(chain.id);
                             }}
                             disabled={deletingId === chain.id}
-                            className="min-h-10 rounded-md bg-rose-700 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-rose-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-200 disabled:cursor-wait disabled:opacity-60"
+                            variant="destructive"
+                            className="min-h-10"
                           >
                             {deletingId === chain.id ? "Deleting..." : "Confirm delete"}
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             type="button"
                             onClick={() => {
                               setConfirmDeleteId(null);
                             }}
                             disabled={deletingId === chain.id}
-                            className="min-h-10 rounded-md border border-white/20 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:opacity-60"
+                            variant="outline"
+                            className="min-h-10"
                           >
                             Cancel
-                          </button>
+                          </Button>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <button
+                          <Button
                             type="button"
                             onClick={() => {
                               beginEdit(chain);
                             }}
-                            className="min-h-10 rounded-md border border-white/20 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
+                            variant="outline"
+                            className="min-h-10"
                           >
                             Edit
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             type="button"
                             onClick={() => {
                               setConfirmDeleteId(chain.id);
@@ -489,10 +495,11 @@ export default function ChainManager({
                               setStatus("");
                               setError("");
                             }}
-                            className="min-h-10 rounded-md border border-rose-300/40 px-3 py-2 text-sm font-medium text-rose-200 transition-colors hover:bg-rose-400/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-200"
+                            variant="outline"
+                            className="border-destructive/40 text-destructive hover:bg-destructive/10 min-h-10"
                           >
                             Delete
-                          </button>
+                          </Button>
                         </div>
                       )}
                     </div>
@@ -504,16 +511,17 @@ export default function ChainManager({
         )}
 
         {hasMore && (
-          <button
+          <Button
             type="button"
             onClick={() => {
               void loadMore();
             }}
             disabled={loadingMore}
-            className="mt-5 min-h-10 rounded-md border border-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-wait disabled:opacity-60"
+            variant="outline"
+            className="mt-5 min-h-10"
           >
             {loadingMore ? "Loading chains..." : "Load more"}
-          </button>
+          </Button>
         )}
       </section>
     </Container>

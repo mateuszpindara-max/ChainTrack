@@ -32,7 +32,8 @@ interface Props {
   onNavigate?: () => void;
 }
 
-const focusStyle = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300";
+const focusStyle =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
 export default function DashboardSidebar({
   selection,
@@ -58,7 +59,7 @@ export default function DashboardSidebar({
       <section aria-labelledby="dashboard-nav-heading">
         <h2
           id="dashboard-nav-heading"
-          className="mb-3 px-3 text-xs font-semibold tracking-wide text-blue-100/50 uppercase"
+          className="text-muted-foreground/65 mb-3 px-3 text-xs font-semibold tracking-wide uppercase"
         >
           Workspace
         </h2>
@@ -69,14 +70,17 @@ export default function DashboardSidebar({
             onNavigate?.();
           }}
           aria-current={selection.kind === "summary" ? "page" : undefined}
-          className={`min-h-10 w-full rounded px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-white/10 ${focusStyle} ${selection.kind === "summary" ? "bg-white/10 text-white" : "text-blue-100/75"}`}
+          className={`hover:bg-accent min-h-10 w-full rounded px-3 py-2 text-left text-sm font-medium transition-colors ${focusStyle} ${selection.kind === "summary" ? "bg-accent text-foreground" : "text-muted-foreground/85"}`}
         >
           Overview
         </button>
       </section>
 
       <section aria-labelledby="bikes-heading">
-        <h2 id="bikes-heading" className="mb-3 px-3 text-xs font-semibold tracking-wide text-blue-100/50 uppercase">
+        <h2
+          id="bikes-heading"
+          className="text-muted-foreground/65 mb-3 px-3 text-xs font-semibold tracking-wide uppercase"
+        >
           Bikes
         </h2>
         <div className="grid gap-1">
@@ -87,7 +91,7 @@ export default function DashboardSidebar({
               onNavigate?.();
             }}
             aria-current={selectedBike(null) ? "page" : undefined}
-            className={`min-h-10 rounded px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-white/10 ${focusStyle} ${selectedBike(null) ? "bg-white/10 text-white" : "text-blue-100/75"}`}
+            className={`hover:bg-accent min-h-10 rounded px-3 py-2 text-left text-sm font-medium transition-colors ${focusStyle} ${selectedBike(null) ? "bg-accent text-foreground" : "text-muted-foreground/85"}`}
           >
             All bikes
           </button>
@@ -103,11 +107,11 @@ export default function DashboardSidebar({
                 }}
                 aria-current={selectedBike(bike.id) ? "page" : undefined}
                 className={cn(
-                  "min-h-10 truncate rounded px-3 py-2 text-left text-sm transition-colors hover:bg-white/10",
+                  "hover:bg-accent min-h-10 truncate rounded px-3 py-2 text-left text-sm transition-colors",
                   focusStyle,
-                  selectedBike(bike.id) ? "bg-white/10 font-medium text-white" : "text-blue-100/75",
-                  bikeStatus?.level === "warning" && "bg-orange-500/20 text-orange-200",
-                  bikeStatus?.level === "critical" && "bg-red-500/20 text-red-200",
+                  selectedBike(bike.id) ? "bg-accent text-foreground font-medium" : "text-muted-foreground/85",
+                  bikeStatus?.level === "warning" && "bg-primary/20 text-primary",
+                  bikeStatus?.level === "critical" && "bg-destructive/20 text-destructive",
                 )}
                 title={
                   bikeStatus
@@ -121,7 +125,7 @@ export default function DashboardSidebar({
           })}
         </div>
         {bikeStatuses.error && (
-          <div className="px-3 py-2 text-sm text-amber-200" role="alert">
+          <div className="text-warning px-3 py-2 text-sm" role="alert">
             <p>{bikeStatuses.error}</p>
             <button
               type="button"
@@ -133,12 +137,12 @@ export default function DashboardSidebar({
           </div>
         )}
         {bikes.loading && (
-          <p className="px-3 py-2 text-sm text-blue-100/60" role="status">
+          <p className="text-muted-foreground/75 px-3 py-2 text-sm" role="status">
             Refreshing bikes...
           </p>
         )}
         {bikes.error && (
-          <div className="px-3 py-2 text-sm text-amber-200" role="alert">
+          <div className="text-warning px-3 py-2 text-sm" role="alert">
             <p>{bikes.error}</p>
             <button type="button" onClick={onRetryBikes} className={`mt-2 underline underline-offset-4 ${focusStyle}`}>
               Retry bikes
@@ -146,7 +150,7 @@ export default function DashboardSidebar({
           </div>
         )}
         {bikes.loadMoreError && (
-          <p className="px-3 py-2 text-sm text-amber-200" role="alert">
+          <p className="text-warning px-3 py-2 text-sm" role="alert">
             {bikes.loadMoreError}
           </p>
         )}
@@ -155,19 +159,19 @@ export default function DashboardSidebar({
             type="button"
             onClick={onLoadMoreBikes}
             disabled={bikes.loadingMore}
-            className={`mt-2 min-h-10 w-full rounded px-3 py-2 text-left text-sm text-blue-100/65 hover:bg-white/10 ${focusStyle} disabled:opacity-50`}
+            className={`text-muted-foreground/80 hover:bg-accent mt-2 min-h-10 w-full rounded px-3 py-2 text-left text-sm ${focusStyle} disabled:opacity-50`}
           >
             {bikes.loadingMore ? "Loading bikes..." : "Load more bikes"}
           </button>
         )}
         {!bikes.hasMore && !bikes.loading && !bikes.error && bikes.items.length === 0 && (
-          <p className="px-3 py-2 text-sm text-blue-100/50">No imported bikes yet.</p>
+          <p className="text-muted-foreground/65 px-3 py-2 text-sm">No imported bikes yet.</p>
         )}
       </section>
 
       <section aria-labelledby="chains-heading">
         <div className="mb-3 flex items-center justify-between px-3">
-          <h2 id="chains-heading" className="text-xs font-semibold tracking-wide text-blue-100/50 uppercase">
+          <h2 id="chains-heading" className="text-muted-foreground/65 text-xs font-semibold tracking-wide uppercase">
             Chains
           </h2>
           <button
@@ -180,9 +184,9 @@ export default function DashboardSidebar({
             title="Manage chains"
             aria-current={selection.kind === "manage-chains" ? "page" : undefined}
             className={cn(
-              "grid size-9 place-items-center rounded text-blue-100/75 hover:bg-white/10",
+              "text-muted-foreground/85 hover:bg-accent grid size-9 place-items-center rounded",
               focusStyle,
-              selection.kind === "manage-chains" && "bg-white/10 text-white",
+              selection.kind === "manage-chains" && "bg-accent text-foreground",
             )}
           >
             <Settings aria-hidden="true" size={17} />
@@ -199,26 +203,26 @@ export default function DashboardSidebar({
               }}
               aria-current={selection.kind === "chain" && selection.chainId === chain.id ? "page" : undefined}
               className={cn(
-                "min-h-10 rounded px-3 py-2 text-left text-sm text-blue-100/75 transition-colors hover:bg-white/10 hover:text-white",
+                "text-muted-foreground/85 hover:bg-accent hover:text-foreground min-h-10 rounded px-3 py-2 text-left text-sm transition-colors",
                 focusStyle,
-                selection.kind === "chain" && selection.chainId === chain.id && "bg-white/10 text-white",
+                selection.kind === "chain" && selection.chainId === chain.id && "bg-accent text-foreground",
               )}
               title={chain.name}
             >
               <span className="block truncate">{chain.name}</span>
-              <span className="block text-xs text-blue-100/60">
+              <span className="text-muted-foreground/75 block text-xs">
                 {chain.status === "active" ? "Active" : chain.status === "stopped" ? "Stopped" : "Not started"}
               </span>
             </button>
           ))}
         </div>
         {chains.loading && (
-          <p className="px-3 py-2 text-sm text-blue-100/60" role="status">
+          <p className="text-muted-foreground/75 px-3 py-2 text-sm" role="status">
             Refreshing chains...
           </p>
         )}
         {chains.error && (
-          <div className="px-3 py-2 text-sm text-amber-200" role="alert">
+          <div className="text-warning px-3 py-2 text-sm" role="alert">
             <p>{chains.error}</p>
             <button type="button" onClick={onRetryChains} className={`mt-2 underline underline-offset-4 ${focusStyle}`}>
               Retry chains
@@ -226,7 +230,7 @@ export default function DashboardSidebar({
           </div>
         )}
         {chains.loadMoreError && (
-          <p className="px-3 py-2 text-sm text-amber-200" role="alert">
+          <p className="text-warning px-3 py-2 text-sm" role="alert">
             {chains.loadMoreError}
           </p>
         )}
@@ -235,13 +239,13 @@ export default function DashboardSidebar({
             type="button"
             onClick={onLoadMoreChains}
             disabled={chains.loadingMore}
-            className={`mt-2 min-h-10 w-full rounded px-3 py-2 text-left text-sm text-blue-100/65 hover:bg-white/10 ${focusStyle} disabled:opacity-50`}
+            className={`text-muted-foreground/80 hover:bg-accent mt-2 min-h-10 w-full rounded px-3 py-2 text-left text-sm ${focusStyle} disabled:opacity-50`}
           >
             {chains.loadingMore ? "Loading chains..." : "Load more chains"}
           </button>
         )}
         {!chains.hasMore && !chains.loading && !chains.error && chains.items.length === 0 && (
-          <p className="px-3 py-2 text-sm text-blue-100/50">No chains yet.</p>
+          <p className="text-muted-foreground/65 px-3 py-2 text-sm">No chains yet.</p>
         )}
       </section>
     </nav>

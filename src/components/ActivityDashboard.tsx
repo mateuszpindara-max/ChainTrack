@@ -4,6 +4,7 @@ import DashboardSidebar from "@/components/DashboardSidebar";
 import ChainDetails from "@/components/ChainDetails";
 import ChainManager from "@/components/ChainManager";
 import YearSummary from "@/components/YearSummary";
+import { Button } from "@/components/ui/button";
 import { useDashboardData } from "@/components/hooks/useDashboardData";
 import type { LifecycleChainView } from "@/lib/chains/chain.ts";
 import { formatDistanceKm, formatLocalActivityDate, type ActivityView } from "@/lib/strava/activity-view.ts";
@@ -220,15 +221,15 @@ export default function ActivityDashboard({
   }
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-[90rem] px-5 py-6 text-white sm:px-8 sm:py-10">
-      <header className="flex flex-wrap items-start justify-between gap-5 border-b border-white/15 pb-6">
+    <main className="text-foreground mx-auto min-h-screen w-full max-w-[90rem] px-5 py-6 sm:px-8 sm:py-10">
+      <header className="border-border flex flex-wrap items-start justify-between gap-5 border-b pb-6">
         <div>
-          <p className="text-sm font-semibold text-orange-300 uppercase">ChainTrack</p>
+          <p className="text-primary text-sm font-semibold uppercase">ChainTrack</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">Your rides</h1>
-          <p className="mt-2 text-sm text-blue-100/70">Bike-linked activity history from Strava</p>
+          <p className="text-muted-foreground/80 mt-2 text-sm">Bike-linked activity history from Strava</p>
         </div>
         <div className="flex items-center gap-3">
-          <button
+          <Button
             ref={drawerTriggerRef}
             type="button"
             onClick={() => {
@@ -237,29 +238,27 @@ export default function ActivityDashboard({
             aria-haspopup="dialog"
             aria-expanded={drawerOpen}
             aria-controls="dashboard-navigation-dialog"
-            className="inline-flex min-h-10 items-center gap-2 rounded-md border border-white/20 px-3 py-2 text-sm font-medium text-white hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 md:hidden"
+            variant="outline"
+            className="min-h-10 md:hidden"
           >
             <Menu aria-hidden="true" size={18} />
             Menu
-          </button>
+          </Button>
           <form method="POST" action="/api/auth/signout">
-            <button
-              type="submit"
-              className="min-h-10 rounded-md border border-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
-            >
+            <Button type="submit" variant="outline" className="min-h-10">
               Sign out
-            </button>
+            </Button>
           </form>
         </div>
       </header>
 
-      <section className="flex flex-col justify-between gap-5 border-b border-white/15 py-6 sm:flex-row sm:items-center">
+      <section className="border-border flex flex-col justify-between gap-5 border-b py-6 sm:flex-row sm:items-center">
         <div>
-          <p className="text-xs font-semibold text-blue-100/55 uppercase">Strava connection</p>
+          <p className="text-muted-foreground/70 text-xs font-semibold uppercase">Strava connection</p>
           <p className="mt-2 flex items-center gap-2 text-base font-medium">
             <span
               aria-hidden="true"
-              className={`size-2 rounded-full ${connectionStatus === "connected" ? "bg-emerald-400" : "bg-white/35"}`}
+              className={`size-2 rounded-full ${connectionStatus === "connected" ? "bg-success" : "bg-muted-foreground/35"}`}
             />
             {connectionStatus === "connected"
               ? "Connected"
@@ -270,42 +269,41 @@ export default function ActivityDashboard({
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {showReauthorization && (
-            <a
-              href="/api/strava/connect"
-              className="inline-flex min-h-11 items-center justify-center rounded-md border border-orange-300/60 px-4 py-2.5 text-sm font-semibold text-orange-100 transition-colors hover:bg-orange-300/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200"
-            >
-              Reauthorize Strava
-            </a>
+            <Button asChild variant="outline" className="border-primary/60 text-primary hover:bg-primary/10 min-h-11">
+              <a href="/api/strava/connect">Reauthorize Strava</a>
+            </Button>
           )}
           {connectionStatus === "connected" && importCompleted ? (
             <details className="relative">
-              <summary className="inline-flex min-h-11 cursor-pointer list-none items-center justify-center rounded-md bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200">
+              <summary className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring focus-visible:ring-offset-background inline-flex min-h-11 cursor-pointer list-none items-center justify-center rounded-md px-5 py-2.5 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none">
                 Synchronize
               </summary>
-              <div className="absolute right-0 z-10 mt-2 grid w-72 max-w-[calc(100vw-2.5rem)] gap-1 rounded-md border border-white/15 bg-slate-950 p-1 shadow-xl">
-                <button
+              <div className="border-border bg-popover absolute right-0 z-10 mt-2 grid w-72 max-w-[calc(100vw-2.5rem)] gap-1 rounded-md border p-1 shadow-xl">
+                <Button
                   type="button"
                   onClick={(event) => {
                     event.currentTarget.closest("details")?.removeAttribute("open");
                     void synchronizeActivities("new");
                   }}
                   disabled={loading || activeSyncRun?.mode === "repair"}
-                  className="min-h-10 rounded px-3 py-2 text-left text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  variant="ghost"
+                  className="min-h-10 w-full justify-start text-left"
                 >
                   {loading && loadingAction === "new"
                     ? "Synchronizing..."
                     : activeSyncRun?.mode === "new"
                       ? "Continue Import new"
                       : "Import new"}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={(event) => {
                     event.currentTarget.closest("details")?.removeAttribute("open");
                     void synchronizeActivities("repair");
                   }}
                   disabled={loading || activeSyncRun?.mode === "new"}
-                  className="grid min-h-10 gap-1 rounded px-3 py-2 text-left text-sm font-medium whitespace-normal text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  variant="ghost"
+                  className="h-auto min-h-10 w-full justify-items-start gap-1 text-left whitespace-normal"
                 >
                   <span>
                     {loading && loadingAction === "repair"
@@ -314,35 +312,27 @@ export default function ActivityDashboard({
                         ? "Continue full-history repair"
                         : "Repair full history"}
                   </span>
-                  <span className="text-xs leading-snug font-normal text-amber-200">
+                  <span className="text-warning text-xs leading-snug font-normal">
                     Repair permanently removes local activities Strava confirms as deleted, including their linked data.
                   </span>
-                </button>
+                </Button>
               </div>
             </details>
           ) : connectionStatus === "connected" ? (
-            <button
-              type="button"
-              onClick={importActivities}
-              disabled={loading}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200 disabled:cursor-wait disabled:opacity-60"
-            >
+            <Button type="button" onClick={importActivities} disabled={loading} size="lg" className="min-h-11">
               {loading ? "Importing activities..." : importBatchHasMore ? "Continue import" : "Import activities"}
-            </button>
+            </Button>
           ) : connectionStatus === "not-connected" ? (
-            <a
-              href="/api/strava/connect"
-              className="inline-flex min-h-11 items-center justify-center rounded-md bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-200"
-            >
-              Connect Strava
-            </a>
+            <Button asChild size="lg" className="min-h-11">
+              <a href="/api/strava/connect">Connect Strava</a>
+            </Button>
           ) : null}
         </div>
       </section>
 
       {callbackMessage && (
         <p
-          className={`border-b border-white/10 py-4 text-sm ${callbackStatus === "connected" ? "text-emerald-200" : "text-amber-200"}`}
+          className={`border-border/70 border-b py-4 text-sm ${callbackStatus === "connected" ? "text-success" : "text-warning"}`}
           role="status"
           aria-live="polite"
         >
@@ -350,7 +340,7 @@ export default function ActivityDashboard({
         </p>
       )}
       {loading && (
-        <p className="border-b border-white/10 py-4 text-sm text-blue-100" role="status" aria-live="polite">
+        <p className="border-border/70 text-muted-foreground border-b py-4 text-sm" role="status" aria-live="polite">
           {loadingAction === "new"
             ? "Checking Strava for newly visible activities..."
             : loadingAction === "repair"
@@ -360,16 +350,16 @@ export default function ActivityDashboard({
       )}
       {result && (
         <div
-          className={`border-b border-white/10 py-4 ${result.outcome === "failed" ? "text-rose-200" : result.outcome === "partial" ? "text-amber-200" : "text-emerald-200"}`}
+          className={`border-border/70 border-b py-4 ${result.outcome === "failed" ? "text-destructive" : result.outcome === "partial" ? "text-warning" : "text-success"}`}
           role="status"
           aria-live="polite"
         >
           <p className="text-sm font-medium">{syncResultMessage(result)}</p>
           {(result.outcome !== "failed" || result.mode === "new" || result.mode === "repair") && (
-            <p className="mt-1 text-sm text-blue-100/70">{syncCountSummary(result)}</p>
+            <p className="text-muted-foreground/80 mt-1 text-sm">{syncCountSummary(result)}</p>
           )}
           {result.skipped > 0 && (
-            <p className="mt-2 text-sm text-blue-100/70">
+            <p className="text-muted-foreground/80 mt-2 text-sm">
               {result.mode === "repair"
                 ? `${result.skipped} ${result.skipped === 1 ? "activity remains" : "activities remain"} hidden because no unambiguous bike was found.`
                 : `${result.skipped} ${result.skipped === 1 ? "activity was" : "activities were"} skipped because no matching bike was found.`}
@@ -379,7 +369,7 @@ export default function ActivityDashboard({
       )}
 
       <div className="grid gap-8 md:grid-cols-[15rem_minmax(0,1fr)] md:gap-10">
-        <aside className="hidden border-r border-white/10 py-8 pr-5 md:block">
+        <aside className="border-border/70 hidden border-r py-8 pr-5 md:block">
           <DashboardSidebar
             selection={data.dashboard.selection}
             bikes={data.bikes}
@@ -425,23 +415,23 @@ export default function ActivityDashboard({
             />
           ) : (
             <section aria-labelledby="activity-heading">
-              <div className="flex flex-wrap items-end justify-between gap-3 border-b border-white/15 pb-4">
+              <div className="border-border flex flex-wrap items-end justify-between gap-3 border-b pb-4">
                 <div>
-                  <p className="text-xs font-semibold text-blue-100/55 uppercase">History</p>
+                  <p className="text-muted-foreground/70 text-xs font-semibold uppercase">History</p>
                   <h2 id="activity-heading" className="mt-2 text-xl font-semibold">
                     {selectedBikeTitle}
                   </h2>
                 </div>
                 {data.dashboard.activityStatus === "ready" && (
-                  <p className="text-sm text-blue-100/60">
+                  <p className="text-muted-foreground/75 text-sm">
                     {data.dashboard.activities.length}{" "}
                     {data.dashboard.activities.length === 1 ? "activity" : "activities"}
                   </p>
                 )}
               </div>
               {selectedBikeId !== null && (
-                <div className="grid gap-2 border-b border-white/10 py-4 sm:max-w-md">
-                  <label htmlFor="activity-chain-filter" className="text-sm font-medium text-blue-100/85">
+                <div className="border-border/70 grid gap-2 border-b py-4 sm:max-w-md">
+                  <label htmlFor="activity-chain-filter" className="text-muted-foreground/90 text-sm font-medium">
                     Filter by chain
                   </label>
                   <select
@@ -459,7 +449,7 @@ export default function ActivityDashboard({
                           ? "activity-chain-filter-error"
                           : undefined
                     }
-                    className="min-h-11 w-full rounded-md border border-white/20 bg-slate-950/60 px-3 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-wait disabled:opacity-60"
+                    className="border-border bg-input text-foreground focus-visible:ring-ring focus-visible:ring-offset-background min-h-11 w-full rounded-md border px-3 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-wait disabled:opacity-60"
                   >
                     <option value="all">All chains</option>
                     {data.chains.items.map((chain) => (
@@ -472,7 +462,7 @@ export default function ActivityDashboard({
                   {data.chains.loading && (
                     <p
                       id="activity-chain-filter-loading"
-                      className="text-sm text-blue-100/65"
+                      className="text-muted-foreground/80 text-sm"
                       role="status"
                       aria-live="polite"
                     >
@@ -480,38 +470,30 @@ export default function ActivityDashboard({
                     </p>
                   )}
                   {data.chains.error && (
-                    <div id="activity-chain-filter-error" className="text-sm text-amber-200" role="alert">
+                    <div id="activity-chain-filter-error" className="text-warning text-sm" role="alert">
                       <p>{data.chains.error}</p>
-                      <button
-                        type="button"
-                        onClick={data.retryChains}
-                        className="mt-1 min-h-10 rounded px-2 py-1 font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
-                      >
+                      <Button type="button" variant="link" onClick={data.retryChains} className="mt-1 min-h-10 px-2">
                         Retry chains
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
               )}
               {data.dashboard.activityStatus === "loading" && (
-                <p className="py-6 text-sm text-blue-100/70" role="status">
+                <p className="text-muted-foreground/80 py-6 text-sm" role="status">
                   Loading activities...
                 </p>
               )}
               {data.dashboard.activityStatus === "error" && (
-                <div className="py-6 text-sm text-amber-200" role="alert">
+                <div className="text-warning py-6 text-sm" role="alert">
                   <p>{data.dashboard.activityError}</p>
-                  <button
-                    type="button"
-                    onClick={data.retryActivities}
-                    className="mt-2 min-h-10 rounded px-3 py-2 font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
-                  >
+                  <Button type="button" variant="link" onClick={data.retryActivities} className="mt-2 min-h-10 px-3">
                     Retry activities
-                  </button>
+                  </Button>
                 </div>
               )}
               {data.dashboard.activityStatus === "ready" && data.dashboard.activities.length === 0 && (
-                <p className="py-8 text-sm text-blue-100/65">
+                <p className="text-muted-foreground/80 py-8 text-sm">
                   {selectedBikeId !== null
                     ? selection.kind === "activities" && selection.chainId !== null
                       ? "No activities match this chain filter."
@@ -520,17 +502,19 @@ export default function ActivityDashboard({
                 </p>
               )}
               {data.dashboard.activities.length > 0 && (
-                <ul className="divide-y divide-white/10">
+                <ul className="divide-border/70 divide-y">
                   {data.dashboard.activities.map((activity: ActivityView) => (
                     <li key={activity.id} className="grid gap-2.5 py-4">
                       <div className="flex min-w-0 items-start justify-between gap-3">
                         <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
-                          <h3 className="min-w-0 flex-1 truncate text-base font-medium text-white">{activity.name}</h3>
-                          <span className="shrink-0 text-sm text-blue-100/60">
+                          <h3 className="text-foreground min-w-0 flex-1 truncate text-base font-medium">
+                            {activity.name}
+                          </h3>
+                          <span className="text-muted-foreground/75 shrink-0 text-sm">
                             <LocalActivityDate value={activity.startedAt} />
                           </span>
                         </div>
-                        <button
+                        <Button
                           ref={(element) => {
                             if (element) waxingActionRefs.current.set(activity.id, element);
                             else {
@@ -548,22 +532,24 @@ export default function ActivityDashboard({
                           }
                           title={`${editingActivityId === activity.id ? "Close" : "Edit"} fresh-wax mark`}
                           disabled={data.waxingMarkSave.isBusy}
-                          className="grid size-10 shrink-0 place-items-center rounded-md border border-white/20 text-orange-200 transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-wait disabled:opacity-60"
+                          variant="outline"
+                          size="icon"
+                          className="text-primary size-10 shrink-0"
                         >
                           <Sparkles aria-hidden="true" size={17} />
-                        </button>
+                        </Button>
                       </div>
                       <div>
-                        <span className="inline-flex max-w-full items-center rounded-sm border border-white/15 bg-white/5 px-2 py-0.5 text-xs font-medium text-blue-100/85">
+                        <span className="border-border bg-accent/50 text-muted-foreground/90 inline-flex max-w-full items-center rounded-sm border px-2 py-0.5 text-xs font-medium">
                           {activity.bikeName}
                         </span>
                       </div>
                       <dl className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4 sm:gap-x-5">
                         <div className="flex min-w-0 items-center justify-between gap-2">
-                          <dt className="shrink-0 text-xs font-medium text-blue-100/55">Chain</dt>
+                          <dt className="text-muted-foreground/70 shrink-0 text-xs font-medium">Chain</dt>
                           <dd className="min-w-0">
                             <span
-                              className="inline-flex max-w-full truncate rounded-sm border border-white/15 bg-white/5 px-1.5 py-0.5 text-xs font-medium text-blue-50"
+                              className="border-border bg-accent/50 text-foreground inline-flex max-w-full truncate rounded-sm border px-1.5 py-0.5 text-xs font-medium"
                               title={
                                 activity.isWaxingStart && activity.chainId === null
                                   ? "Chain removed"
@@ -577,22 +563,22 @@ export default function ActivityDashboard({
                           </dd>
                         </div>
                         <div className="flex min-w-0 items-center justify-between gap-2">
-                          <dt className="shrink-0 text-xs font-medium text-blue-100/55">Fresh wax</dt>
+                          <dt className="text-muted-foreground/70 shrink-0 text-xs font-medium">Fresh wax</dt>
                           <dd>
-                            <span className="inline-flex rounded-sm border border-orange-200/25 bg-orange-300/10 px-1.5 py-0.5 text-xs font-medium text-orange-100">
+                            <span className="border-primary/30 bg-primary/10 text-primary inline-flex rounded-sm border px-1.5 py-0.5 text-xs font-medium">
                               {activity.isWaxingStart ? "Marked" : "Not marked"}
                             </span>
                           </dd>
                         </div>
                         <div className="flex min-w-0 items-center justify-between gap-2">
-                          <dt className="shrink-0 text-xs font-medium text-blue-100/55">Ride</dt>
-                          <dd className="text-right text-sm font-medium text-white">
+                          <dt className="text-muted-foreground/70 shrink-0 text-xs font-medium">Ride</dt>
+                          <dd className="text-foreground text-right text-sm font-medium">
                             {formatDistanceKm(activity.distanceMeters)}
                           </dd>
                         </div>
                         <div className="flex min-w-0 items-center justify-between gap-2">
-                          <dt className="shrink-0 text-xs font-medium text-blue-100/55">Bike total</dt>
-                          <dd className="text-right text-sm font-medium text-white">
+                          <dt className="text-muted-foreground/70 shrink-0 text-xs font-medium">Bike total</dt>
+                          <dd className="text-foreground text-right text-sm font-medium">
                             {activity.cumulativeDistanceMeters == null
                               ? "N/A"
                               : formatDistanceKm(activity.cumulativeDistanceMeters)}
@@ -603,7 +589,7 @@ export default function ActivityDashboard({
                         <div id={`waxing-mark-editor-${activity.id}`} className="grid gap-1 sm:max-w-sm">
                           <label
                             htmlFor={`waxing-mark-${activity.id}`}
-                            className="text-sm font-medium text-blue-100/85"
+                            className="text-muted-foreground/90 text-sm font-medium"
                           >
                             Fresh-wax mark for {activity.name}
                           </label>
@@ -625,7 +611,7 @@ export default function ActivityDashboard({
                                 ? `waxing-mark-error-${activity.id}`
                                 : undefined
                             }
-                            className="min-h-11 w-full rounded-md border border-white/20 bg-slate-950/60 px-3 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-wait disabled:opacity-60"
+                            className="border-border bg-input text-foreground focus-visible:ring-ring focus-visible:ring-offset-background min-h-11 w-full rounded-md border px-3 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-wait disabled:opacity-60"
                           >
                             <option value="">Not a fresh-wax ride</option>
                             {activity.isWaxingStart && activity.chainId === null && (
@@ -643,26 +629,27 @@ export default function ActivityDashboard({
                       )}
                       {data.waxingMarkSave.activityId === activity.id &&
                         (data.waxingMarkSave.phase === "saving" || data.waxingMarkSave.phase === "refreshing") && (
-                          <p className="text-sm text-blue-100/70" role="status" aria-live="polite">
+                          <p className="text-muted-foreground/80 text-sm" role="status" aria-live="polite">
                             {data.waxingMarkSave.phase === "saving"
                               ? "Saving fresh-wax mark..."
                               : "Refreshing rides..."}
                           </p>
                         )}
                       {data.waxingMarkSave.activityId === activity.id && data.waxingMarkSave.error && (
-                        <div id={`waxing-mark-error-${activity.id}`} className="text-sm text-rose-200" role="alert">
+                        <div id={`waxing-mark-error-${activity.id}`} className="text-destructive text-sm" role="alert">
                           <p>{data.waxingMarkSave.error}</p>
                           {data.waxingMarkSave.canRetryRefresh && (
-                            <button
+                            <Button
                               type="button"
+                              variant="link"
                               onClick={() => {
                                 waxingFocusRequest.current = activity.id;
                                 void data.retryWaxingRefresh();
                               }}
-                              className="mt-1 min-h-10 rounded px-2 py-1 font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
+                              className="mt-1 min-h-10 px-2"
                             >
                               Retry refresh
-                            </button>
+                            </Button>
                           )}
                         </div>
                       )}
@@ -671,19 +658,20 @@ export default function ActivityDashboard({
                 </ul>
               )}
               {data.dashboard.loadMoreError && (
-                <p className="py-4 text-sm text-amber-200" role="alert">
+                <p className="text-warning py-4 text-sm" role="alert">
                   {data.dashboard.loadMoreError}
                 </p>
               )}
               {data.dashboard.hasMoreActivities && (
-                <button
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={data.loadMoreActivities}
                   disabled={data.dashboard.loadingMoreActivities}
-                  className="mt-5 min-h-10 rounded-md border border-white/20 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 disabled:cursor-wait disabled:opacity-60"
+                  className="mt-5 min-h-10"
                 >
                   {data.dashboard.loadingMoreActivities ? "Loading activities..." : "Load more"}
-                </button>
+                </Button>
               )}
             </section>
           )}
@@ -698,18 +686,20 @@ export default function ActivityDashboard({
           drawerTriggerRef.current?.focus();
         }}
         aria-label="Dashboard navigation"
-        className="fixed inset-y-0 left-0 m-0 h-full max-h-none w-[min(22rem,calc(100vw-2.5rem))] max-w-none border-r border-white/15 bg-slate-950 p-5 text-white backdrop:bg-black/65 md:hidden"
+        className="border-border bg-popover text-popover-foreground backdrop:bg-background/70 fixed inset-y-0 left-0 m-0 h-full max-h-none w-[min(22rem,calc(100vw-2.5rem))] max-w-none border-r p-5 md:hidden"
       >
-        <div className="mb-6 flex items-center justify-between border-b border-white/15 pb-4">
-          <p className="text-sm font-semibold text-orange-300">Navigation</p>
-          <button
+        <div className="border-border mb-6 flex items-center justify-between border-b pb-4">
+          <p className="text-primary text-sm font-semibold">Navigation</p>
+          <Button
             type="button"
             onClick={closeDrawer}
             aria-label="Close navigation"
-            className="grid size-10 place-items-center rounded border border-white/20 text-lg hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
+            variant="outline"
+            size="icon"
+            className="size-10"
           >
             <X aria-hidden="true" size={18} />
-          </button>
+          </Button>
         </div>
         <DashboardSidebar
           selection={data.dashboard.selection}
