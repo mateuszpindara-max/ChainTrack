@@ -201,15 +201,15 @@ No database schema or production migration is planned. Changing `supabase/config
 
 #### Automated
 
-- [x] 2.1 `npm run lint` passes.
-- [x] 2.2 `npm run check` passes.
-- [x] 2.3 `npm test` passes.
-- [x] 2.4 `npm run build` passes with the project's configured environment.
-- [x] 2.5 `npm run smoke` passes against the local production preview with Supabase available and email confirmation disabled.
-- [x] 2.6 `npm run test:chain-concurrency` and `npm run test:waxing-integration` pass against the renamed local Supabase container when Docker/Supabase are available.
-- [x] 2.7 An active-file scan finds no unintended starter branding; package/lockfile names, Supabase `project_id`, and test container identifiers are consistent.
+- [x] 2.1 `npm run lint` passes. — fd3a391
+- [x] 2.2 `npm run check` passes. — fd3a391
+- [x] 2.3 `npm test` passes. — fd3a391
+- [x] 2.4 `npm run build` passes with the project's configured environment. — fd3a391
+- [x] 2.5 `npm run smoke` passes against the local production preview with Supabase available and email confirmation disabled. — fd3a391
+- [x] 2.6 `npm run test:chain-concurrency` and `npm run test:waxing-integration` pass against the renamed local Supabase container when Docker/Supabase are available. — fd3a391
+- [x] 2.7 An active-file scan finds no unintended starter branding; package/lockfile names, Supabase `project_id`, and test container identifiers are consistent. — fd3a391
 
 #### Manual
 
-- [x] 2.8 Review the concise README and `docs/setup.md` for accurate links, setup instructions, and separation of product overview from onboarding.
-- [x] 2.9 Run the documented local Supabase startup after the project ID change and confirm the test scripts target the resulting ChainTrack container.
+- [x] 2.8 Review the concise README and `docs/setup.md` for accurate links, setup instructions, and separation of product overview from onboarding. — fd3a391
+- [x] 2.9 Run the documented local Supabase startup after the project ID change and confirm the test scripts target the resulting ChainTrack container. — fd3a391

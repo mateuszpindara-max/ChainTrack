@@ -1,7 +1,7 @@
 ---
 change_id: product-identity
 title: Establish consistent ChainTrack product identity
-status: implementing
+status: implemented
 created: 2026-10-30
 updated: 2026-10-30
 archived_at: null
