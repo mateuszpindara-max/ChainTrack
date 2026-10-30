@@ -163,7 +163,7 @@ try {
       "docker",
       [
         "exec",
-        "supabase_db_10x-astro-starter",
+        "supabase_db_chaintrack",
         "psql",
         "-U",
         "postgres",

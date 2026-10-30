@@ -11,7 +11,7 @@ Ustalić i naprawić przyczynę, dla której zalogowany dashboard produkcyjny ni
 - `src/lib/supabase.ts` tworzy klienta SSR na podstawie serwerowych `SUPABASE_URL` i `SUPABASE_KEY`. Middleware rozwiązuje użytkownika z sesji i chroni dashboard.
 - Migracja `20261009000000_create_activity_import_schema.sql` tworzy `strava_connections`, RLS i politykę własności użytkownika. Kolejne migracje dodają kolumny importu i tabele przebiegów synchronizacji. Repozytorium nie potwierdza, które migracje są zastosowane w produkcji.
 - `wrangler.jsonc` wskazuje Worker `chaintrack-production`, ale nie potwierdza, do jakiego projektu Supabase kierują produkcyjne sekrety.
-- `supabase/config.toml` nadal ma `project_id = "10x-astro-starter"`. Nie wolno zakładać, że lokalny Supabase CLI jest powiązany z właściwym projektem produkcyjnym.
+- `supabase/config.toml` ma lokalne `project_id = "chaintrack"`. Nie wolno zakładać, że lokalny Supabase CLI jest powiązany z właściwym projektem produkcyjnym.
 - Błąd OAuth Stravy jest oddzielnym etapem. Brak rekordu po udanym odczycie powinien dać `Not connected`; nie wyjaśnia sam w sobie etykiety `Connection status unavailable`.
 - Istniejący runbook wymaga ręcznej zgody właściciela na zmiany produkcyjne, sekrety i migracje. Te bramki pozostają obowiązujące.
 
@@ -146,7 +146,7 @@ Potwierdzić rezultat w UI, oddzielić ewentualny problem OAuth od odczytu bazy 
 
 **Intent**: Umieścić utrzymywalną instrukcję dla właściciela obok istniejących etapów produkcyjnych, zamiast tworzyć drugi, konkurencyjny runbook.
 
-**Contract**: Dodać polską sekcję dla `Connection status unavailable`, zawierającą kolejność rozpoznania właściwego Workera/projektu, odczytu statusu dashboardu, przeglądu zanonimizowanych logów, sprawdzenia historii migracji/RLS, warunkowej naprawy z bramką zgody oraz osobnej kontroli OAuth. Wyraźnie ostrzec o lokalnym `project_id = "10x-astro-starter"`, zakazać działań CLI na produkcji bez jawnego potwierdzenia projektu i zabronić kopiowania sekretów, tokenów, cookies oraz danych użytkownika. Nie utrwalać żadnych prawdziwych wartości konfiguracyjnych.
+**Contract**: Dodać polską sekcję dla `Connection status unavailable`, zawierającą kolejność rozpoznania właściwego Workera/projektu, odczytu statusu dashboardu, przeglądu zanonimizowanych logów, sprawdzenia historii migracji/RLS, warunkowej naprawy z bramką zgody oraz osobnej kontroli OAuth. Wyraźnie ostrzec, że lokalne `project_id = "chaintrack"` nie identyfikuje projektu produkcyjnego, zakazać działań CLI na produkcji bez jawnego potwierdzenia projektu i zabronić kopiowania sekretów, tokenów, cookies oraz danych użytkownika. Nie utrwalać żadnych prawdziwych wartości konfiguracyjnych.
 
 ### Success Criteria:
 
@@ -188,7 +188,7 @@ Plan nie wprowadza cyklicznego odpytywania, nowych zapytań ani dodatkowej telem
 
 - Nie stosować migracji, dopóki nie zostanie potwierdzone, że brakuje konkretnej wersji w właściwym projekcie produkcyjnym.
 - Nie używać `npx supabase db reset` na produkcji. Lokalny reset jest dopuszczalny wyłącznie do walidacji migracji na lokalnej bazie.
-- `supabase/config.toml` ma szablonowy `project_id`; każde użycie CLI wobec zdalnego projektu wymaga uprzedniego, jawnego potwierdzenia właściwego project ref, planu zmian i osobnej zgody właściciela.
+- `supabase/config.toml` ma lokalny `project_id = "chaintrack"`; każde użycie CLI wobec zdalnego projektu wymaga uprzedniego, jawnego potwierdzenia właściwego project ref, planu zmian i osobnej zgody właściciela.
 - Zmianę schematu/RLS i deploy traktować oddzielnie; przed nimi sprawdzić kompatybilność oraz uzyskać zgodę zgodnie z deployment runbookiem. Nie cofać migracji automatycznie.
 
 ## References

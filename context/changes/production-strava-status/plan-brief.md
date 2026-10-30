@@ -11,7 +11,7 @@ Dashboard zgłasza `Connection status unavailable`, a połączenie Stravy nie po
 
 ## Starting Point
 
-Dashboard rozróżnia błąd odczytu `strava_connections` od udanego odczytu bez rekordu: pierwszy daje `Connection status unavailable`, drugi `Not connected`. Schemat i RLS są w migracjach repozytorium, ale stan produkcyjny nie jest znany; ponadto lokalny `supabase/config.toml` wciąż wskazuje `10x-astro-starter`.
+Dashboard rozróżnia błąd odczytu `strava_connections` od udanego odczytu bez rekordu: pierwszy daje `Connection status unavailable`, drugi `Not connected`. Schemat i RLS są w migracjach repozytorium, ale stan produkcyjny nie jest znany; lokalny `supabase/config.toml` wskazuje `chaintrack` i nie identyfikuje projektu produkcyjnego.
 
 ## Desired End State
 
@@ -25,7 +25,7 @@ Dashboard pokazuje stan wynikający z rzeczywistego odczytu połączenia. Potwie
 | Źródło dowodów | Istniejące panele Cloudflare i Supabase | Pozwala sprawdzić środowisko bez dodawania logowania do kodu | Plan |
 | Zakres zmian produkcyjnych | Wyłącznie minimalna, potwierdzona naprawa; osobna zgoda przed operacją | Zmiana sekretów, migracje, RLS i deploy są obarczone ryzykiem i już wymagają ręcznej akceptacji | Frame / deployment runbook |
 | Dokumentacja | Dodać sekcję do istniejącego polskiego runbooka | Zachowuje jedno miejsce dla procedur produkcyjnych | Plan |
-| Niezaufana konfiguracja lokalna | Nie linkować CLI do produkcji na podstawie obecnego `project_id` | `supabase/config.toml` ma nadal szablonową wartość `10x-astro-starter` | Plan |
+| Niezaufana konfiguracja lokalna | Nie linkować CLI do produkcji na podstawie lokalnego `project_id` | `supabase/config.toml` wskazuje `chaintrack`, ale ta wartość nie identyfikuje projektu produkcyjnego | Plan |
 
 ## Scope
 
@@ -53,7 +53,7 @@ Najpierw odczyt tylko w panelach dostawców i zanonimizowanie dowodów. Następn
 
 - Przyczyna produkcyjna nie jest jeszcze znana; sama nazwa komunikatu wskazuje ścieżkę odczytu, nie źródłowy błąd dostawcy.
 - Jeśli nie da się uzyskać logów lub historii migracji, plan zatrzymuje się z konkretną blokadą zamiast zgadywać i zmieniać produkcję.
-- Lokalne `project_id = "10x-astro-starter"` nie może być użyte jako dowód ani cel dla operacji produkcyjnej.
+- Lokalne `project_id = "chaintrack"` nie może być użyte jako dowód ani cel dla operacji produkcyjnej.
 
 ## Success Criteria (Summary)
 

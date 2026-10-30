@@ -9,7 +9,7 @@ const activityId = randomUUID();
 const dockerArgs = [
   "exec",
   "-i",
-  "supabase_db_10x-astro-starter",
+  "supabase_db_chaintrack",
   "psql",
   "-X",
   "-qAt",

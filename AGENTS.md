@@ -2,6 +2,8 @@
 
 This is an Astro 7 SSR app with React 19 islands, Supabase auth, and Cloudflare Workers deployment. Most agent work lands in `src/pages`, `src/components`, and `src/lib`, and the first validation step is a real lint/build check.
 
+For installation, environment configuration, local Supabase, validation, and deployment instructions, see [docs/setup.md](docs/setup.md).
+
 ## Hard rules
 
 - Keep secrets in `astro:env/server` and local `.dev.vars`; do not expose them to client code. See `@astro.config.mjs` and `@src/lib/supabase.ts`.
@@ -26,7 +28,7 @@ This is an Astro 7 SSR app with React 19 islands, Supabase auth, and Cloudflare 
 ## Coding and validation
 
 - Use Astro for page/layout composition and React only for interactivity. Prefer the `cn()` helper from `@/lib/utils` for merged class names instead of string concatenation.
-- Match the Node version pinned in `.nvmrc` (22.14.0), and keep runtime secrets aligned with the Cloudflare/Supabase setup described in `@README.md`.
+- Match the Node version pinned in `.nvmrc` (22.14.0), and keep runtime secrets aligned with the Cloudflare/Supabase setup described in `@docs/setup.md`.
 - CI is defined in `@.github/workflows/ci.yml`; it runs lint, `astro check`, and build, then a Supabase-backed smoke test against the production preview.
 
 ## Security and config tips
